@@ -97,21 +97,21 @@ def get_point_by_user(nickname: str, user_id: str) -> PointRow | None:
     if user_id:
         for i, row in enumerate(data):
             if row.get("user_id") == user_id:
-                row_nickname = row.get("nickname", "").strip()
+                row_nickname = (row.get("nickname") or "").strip()
                 if row_nickname != nickname:
                     raise NicknameMismatchError(row_nickname, nickname)
                 return PointRow(
                     row_index=i,
                     user_id=row["user_id"],
                     nickname=row_nickname,
-                    points=int(row.get("points", 0)),
+                    points=int(row.get("points") or 0),
                 )
 
     # 2차: 닉네임으로 검색
     for i, row in enumerate(data):
-        row_nickname = row.get("nickname", "").strip()
+        row_nickname = (row.get("nickname") or "").strip()
         if row_nickname == nickname:
-            row_user_id = row.get("user_id", "").strip()
+            row_user_id = (row.get("user_id") or "").strip()
             if not row_user_id:
                 raise UserIdNotRegisteredError(row_nickname)
             if user_id and row_user_id != user_id:
@@ -120,7 +120,7 @@ def get_point_by_user(nickname: str, user_id: str) -> PointRow | None:
                 row_index=i,
                 user_id=row_user_id,
                 nickname=row_nickname,
-                points=int(row.get("points", 0)),
+                points=int(row.get("points") or 0),
             )
 
     return None
