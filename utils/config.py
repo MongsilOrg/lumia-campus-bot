@@ -11,10 +11,6 @@ class BotConfig:
     BOT_TOKEN: str
     GUILD_ID: int
     DASHBOARD_CHANNEL_ID: int
-    GOOGLE_SHEETS_CLIENT_EMAIL: str
-    GOOGLE_SHEETS_PRIVATE_KEY: str
-    POINT_SPREADSHEET_ID: str
-    COUPON_SPREADSHEET_ID: str
 
     @classmethod
     def from_env(cls) -> BotConfig:
@@ -30,10 +26,6 @@ class BotConfig:
             BOT_TOKEN=_require("BOT_TOKEN"),
             GUILD_ID=int(_require("GUILD_ID")),
             DASHBOARD_CHANNEL_ID=int(_require("DASHBOARD_CHANNEL_ID")),
-            GOOGLE_SHEETS_CLIENT_EMAIL=_require("GOOGLE_SHEETS_CLIENT_EMAIL"),
-            GOOGLE_SHEETS_PRIVATE_KEY=_require("GOOGLE_SHEETS_PRIVATE_KEY"),
-            POINT_SPREADSHEET_ID=_require("POINT_SPREADSHEET_ID"),
-            COUPON_SPREADSHEET_ID=_require("COUPON_SPREADSHEET_ID"),
         )
 
 

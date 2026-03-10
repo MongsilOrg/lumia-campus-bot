@@ -9,7 +9,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from utils.config import get_config
-from utils.sheets import (
+from utils.data import (
     NicknameMismatchError,
     UserIdNotRegisteredError,
     assign_coupon,
@@ -124,7 +124,7 @@ async def _handle_point_check(interaction: discord.Interaction) -> None:
     nickname = _get_nickname(member)
 
     try:
-        point_row = await get_point_by_user(nickname, str(member.id))
+        point_row = get_point_by_user(nickname, str(member.id))
     except NicknameMismatchError:
         await interaction.edit_original_response(
             view=_error_view("닉네임이 일치하지 않습니다.\n관리자에게 문의하세요.")
@@ -138,7 +138,7 @@ async def _handle_point_check(interaction: discord.Interaction) -> None:
         )
         return
     except Exception:
-        log.exception("[포인트 조회] 시트 조회 실패")
+        log.exception("[포인트 조회] 데이터 조회 실패")
         await interaction.edit_original_response(
             view=_error_view("포인트 조회 중 오류가 발생했습니다.")
         )
@@ -147,7 +147,7 @@ async def _handle_point_check(interaction: discord.Interaction) -> None:
     if not point_row:
         await interaction.edit_original_response(
             view=_error_view(
-                "포인트 시트에 등록되지 않은 사용자입니다.\n관리자에게 문의하세요."
+                "등록되지 않은 사용자입니다.\n관리자에게 문의하세요."
             )
         )
         return
@@ -193,7 +193,7 @@ async def _handle_exchange_start(interaction: discord.Interaction) -> None:
     user_id = str(member.id)
 
     try:
-        existing = await get_coupon_by_user_id(user_id)
+        existing = get_coupon_by_user_id(user_id)
     except Exception:
         log.exception("[교환] 기존 쿠폰 조회 실패")
         await interaction.edit_original_response(
@@ -216,7 +216,7 @@ async def _handle_exchange_start(interaction: discord.Interaction) -> None:
         return
 
     try:
-        point_row = await get_point_by_user(nickname, user_id)
+        point_row = get_point_by_user(nickname, user_id)
     except NicknameMismatchError:
         await interaction.edit_original_response(
             view=_error_view("닉네임이 일치하지 않습니다.\n관리자에게 문의하세요.")
@@ -239,7 +239,7 @@ async def _handle_exchange_start(interaction: discord.Interaction) -> None:
     if not point_row:
         await interaction.edit_original_response(
             view=_error_view(
-                "포인트 시트에 등록되지 않은 사용자입니다.\n관리자에게 문의하세요."
+                "등록되지 않은 사용자입니다.\n관리자에게 문의하세요."
             )
         )
         return
@@ -331,7 +331,7 @@ async def _handle_exchange_confirm(
 
     try:
         async with _exchange_lock:
-            existing = await get_coupon_by_user_id(user_id)
+            existing = get_coupon_by_user_id(user_id)
             if existing:
                 await interaction.edit_original_response(
                     view=_error_view("이미 쿠폰을 발급받았습니다.")
@@ -345,7 +345,7 @@ async def _handle_exchange_confirm(
                 return
 
             try:
-                point_row = await get_point_by_user(nickname, user_id)
+                point_row = get_point_by_user(nickname, user_id)
             except (NicknameMismatchError, UserIdNotRegisteredError) as e:
                 await interaction.edit_original_response(
                     view=_error_view(str(e))
@@ -354,7 +354,7 @@ async def _handle_exchange_confirm(
 
             if not point_row:
                 await interaction.edit_original_response(
-                    view=_error_view("포인트 시트에 등록되지 않은 사용자입니다.")
+                    view=_error_view("등록되지 않은 사용자입니다.")
                 )
                 return
 
@@ -367,7 +367,7 @@ async def _handle_exchange_confirm(
                 )
                 return
 
-            available = await find_available_coupon()
+            available = find_available_coupon()
             if not available:
                 await interaction.edit_original_response(
                     view=_error_view("발급 가능한 쿠폰이 없습니다.")
@@ -375,19 +375,17 @@ async def _handle_exchange_confirm(
                 return
 
             # 포인트 차감
-            await deduct_points(
+            deduct_points(
                 point_row.row_index, point_row.points, COUPON_COST
             )
 
-            # 쿠폰 할당 + 검증
+            # 쿠폰 할당
             try:
-                verified = await assign_coupon(
-                    available.row_index, user_id, nickname
-                )
+                assign_coupon(available.row_index, user_id, nickname)
             except Exception:
                 log.exception("[교환] 쿠폰 할당 실패, 포인트 복구 시도")
                 try:
-                    await restore_points(
+                    restore_points(
                         point_row.row_index,
                         point_row.points - COUPON_COST,
                         COUPON_COST,
@@ -405,27 +403,9 @@ async def _handle_exchange_confirm(
                 )
                 return
 
-            if not verified:
-                try:
-                    await restore_points(
-                        point_row.row_index,
-                        point_row.points - COUPON_COST,
-                        COUPON_COST,
-                    )
-                except Exception:
-                    log.exception(
-                        "[교환] 충돌 후 포인트 복구 실패 — userId=%s", user_id
-                    )
-                await interaction.edit_original_response(
-                    view=_error_view(
-                        "쿠폰 발급 중 충돌이 발생했습니다.\n다시 시도해주세요."
-                    )
-                )
-                return
-
             # 로그 기록 (실패해도 교환은 완료)
             try:
-                await log_coupon_claim(
+                log_coupon_claim(
                     user_id, nickname, available.coupon_code, COUPON_COST
                 )
             except Exception:
