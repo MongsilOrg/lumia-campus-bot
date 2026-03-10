@@ -147,22 +147,24 @@ def get_coupon_by_user_id(user_id: str) -> CouponRow | None:
     """기존 쿠폰 조회"""
     data = _read_json(COUPONS_FILE)
     for i, row in enumerate(data):
-        if row.get("user_id") == user_id:
+        row_uid = row.get("user_id")
+        if row_uid is not None and str(row_uid) == user_id:
             return CouponRow(
                 row_index=i,
-                coupon_code=row.get("code", ""),
-                assigned_user_id=row.get("user_id", ""),
-                assigned_nickname=row.get("nickname", ""),
-                assigned_at=row.get("assigned_at", ""),
+                coupon_code=row.get("code") or "",
+                assigned_user_id=str(row_uid),
+                assigned_nickname=row.get("nickname") or "",
+                assigned_at=row.get("assigned_at") or "",
             )
     return None
 
 
 def find_available_coupon() -> AvailableCoupon | None:
-    """미할당 쿠폰 찾기"""
+    """미할당 쿠폰 찾기 (code 존재, user_id 미할당)"""
     data = _read_json(COUPONS_FILE)
     for i, row in enumerate(data):
-        if row.get("code") and not row.get("user_id"):
+        uid = row.get("user_id")
+        if row.get("code") and (uid is None or uid == ""):
             return AvailableCoupon(row_index=i, coupon_code=row["code"])
     return None
 
