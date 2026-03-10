@@ -127,15 +127,26 @@ def get_point_by_user(nickname: str, user_id: str) -> PointRow | None:
 
 
 def deduct_points(row_index: int, current_points: int, amount: int) -> None:
-    """포인트 차감"""
+    """포인트 차감 (인덱스 범위·잔액 검증 포함)"""
     data = _read_json(POINTS_FILE)
-    data[row_index]["points"] = current_points - amount
+    if row_index < 0 or row_index >= len(data):
+        raise IndexError(f"유효하지 않은 포인트 인덱스: {row_index}")
+    actual = int(data[row_index].get("points", 0))
+    if actual != current_points:
+        raise ValueError(
+            f"포인트 불일치: expected={current_points}, actual={actual}"
+        )
+    if actual < amount:
+        raise ValueError(f"포인트 부족: have={actual}, need={amount}")
+    data[row_index]["points"] = actual - amount
     _write_json(POINTS_FILE, data)
 
 
 def restore_points(row_index: int, current_points: int, amount: int) -> None:
-    """포인트 복구 (쿠폰 할당 실패 시)"""
+    """포인트 복구 (쿠폰 할당 실패 시, 인덱스 범위 검증 포함)"""
     data = _read_json(POINTS_FILE)
+    if row_index < 0 or row_index >= len(data):
+        raise IndexError(f"유효하지 않은 포인트 인덱스: {row_index}")
     data[row_index]["points"] = current_points + amount
     _write_json(POINTS_FILE, data)
 
@@ -170,10 +181,16 @@ def find_available_coupon() -> AvailableCoupon | None:
 
 
 def assign_coupon(row_index: int, user_id: str, nickname: str) -> None:
-    """쿠폰 할당"""
+    """쿠폰 할당 (인덱스 범위·중복 할당 검증 포함)"""
     data = _read_json(COUPONS_FILE)
+    if row_index < 0 or row_index >= len(data):
+        raise IndexError(f"유효하지 않은 쿠폰 인덱스: {row_index}")
+    row = data[row_index]
+    existing_uid = row.get("user_id")
+    if existing_uid is not None and existing_uid != "":
+        raise ValueError(f"이미 할당된 쿠폰: index={row_index}, user_id={existing_uid}")
     now = _to_kst_string()
-    data[row_index].update(
+    row.update(
         {
             "assigned_at": now,
             "user_id": user_id,
