@@ -327,10 +327,23 @@ async def _handle_exchange_confirm(
 
     try:
         async with _exchange_lock:
-            existing = get_coupon_by_user_id(user_id)
+            try:
+                existing = get_coupon_by_user_id(user_id)
+            except Exception:
+                log.exception("[교환] 기존 쿠폰 조회 실패 (확인 단계)")
+                await interaction.edit_original_response(
+                    view=_error_view("쿠폰 조회 중 오류가 발생했어요.")
+                )
+                return
+
             if existing:
                 await interaction.edit_original_response(
-                    view=_error_view("이미 쿠폰을 발급받았어요.")
+                    view=_view(
+                        f"## 🎫 이미 발급된 쿠폰\n\n"
+                        f"쿠폰 코드: **{existing.coupon_code}**\n"
+                        f"발급 일시: {existing.assigned_at}",
+                        discord.Colour.gold(),
+                    )
                 )
                 return
 
@@ -354,6 +367,12 @@ async def _handle_exchange_confirm(
                     view=_error_view(
                         "Discord ID가 등록되지 않았어요.\n관리자에게 문의해 주세요."
                     )
+                )
+                return
+            except Exception:
+                log.exception("[교환] 포인트 조회 실패 (확인 단계)")
+                await interaction.edit_original_response(
+                    view=_error_view("포인트 조회 중 오류가 발생했어요.")
                 )
                 return
 
