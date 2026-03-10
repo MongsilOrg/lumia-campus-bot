@@ -5,7 +5,6 @@ import logging
 import os
 
 import discord
-from discord import app_commands
 from discord.ext import commands
 
 from utils.config import get_config
@@ -435,34 +434,40 @@ async def _handle_exchange_confirm(
     await interaction.edit_original_response(view=view)
 
 
-# ── Cog ──
+# ── 대시보드 자동 전송 ──
 
 
-class ExchangeCog(commands.Cog):
+class _DashboardManager(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self._dashboard_sent = False
 
-    @app_commands.command(
-        name="대시보드", description="프로필 아이콘 교환 대시보드를 전송합니다."
-    )
-    @app_commands.default_permissions(administrator=True)
-    async def send_dashboard(self, interaction: discord.Interaction) -> None:
+    @commands.Cog.listener()
+    async def on_ready(self):
+        if self._dashboard_sent:
+            return
+        self._dashboard_sent = True
+        await self._ensure_dashboard()
+
+    async def _ensure_dashboard(self) -> None:
         cfg = get_config()
         channel = self.bot.get_channel(cfg.DASHBOARD_CHANNEL_ID)
         if not channel or not isinstance(channel, discord.TextChannel):
-            await interaction.response.send_message(
-                "대시보드 채널을 찾을 수 없습니다.", ephemeral=True
-            )
+            log.warning("대시보드 채널을 찾을 수 없습니다 (ID: %s)", cfg.DASHBOARD_CHANNEL_ID)
             return
+
+        # 채널에 봇이 보낸 대시보드가 이미 있으면 생략
+        async for msg in channel.history(limit=50):
+            if msg.author == self.bot.user:
+                log.info("기존 대시보드 발견, 전송 생략")
+                return
 
         view = DashboardView()
         file = discord.File(ICON_PATH, filename="profile-icon.webp")
         await channel.send(view=view, file=file)
-        await interaction.response.send_message(
-            f"대시보드를 {channel.mention}에 전송했습니다.", ephemeral=True
-        )
+        log.info("대시보드 자동 전송 완료")
 
 
 async def setup(bot: commands.Bot) -> None:
     bot.add_view(DashboardView())
-    await bot.add_cog(ExchangeCog(bot))
+    await bot.add_cog(_DashboardManager(bot))

@@ -26,14 +26,16 @@ def main() -> None:
     async def on_ready():
         log.info("봇 로그인: %s (ID: %s)", bot.user, bot.user.id)
 
-        # Cog 로드
-        await bot.load_extension("commands.exchange")
+        if not hasattr(bot, "_setup_done"):
+            bot._setup_done = True
 
-        # 슬래시 커맨드 동기화 (특정 길드)
-        guild = discord.Object(id=cfg.GUILD_ID)
-        bot.tree.copy_global_to(guild=guild)
-        synced = await bot.tree.sync(guild=guild)
-        log.info("슬래시 커맨드 %d개 동기화 완료 (guild=%s)", len(synced), cfg.GUILD_ID)
+            await bot.load_extension("commands.exchange")
+
+            # 기존 슬래시 커맨드 정리 (서버에서 제거)
+            guild = discord.Object(id=cfg.GUILD_ID)
+            bot.tree.clear_commands(guild=guild)
+            await bot.tree.sync(guild=guild)
+            log.info("슬래시 커맨드 정리 완료 (guild=%s)", cfg.GUILD_ID)
 
     bot.run(cfg.BOT_TOKEN, log_handler=None)
 
