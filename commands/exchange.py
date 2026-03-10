@@ -8,17 +8,8 @@ import discord
 from discord.ext import commands
 
 from utils.config import get_config
-from utils.data import (
-    NicknameMismatchError,
-    UserIdNotRegisteredError,
-    assign_coupon,
-    deduct_points,
-    find_available_coupon,
-    get_coupon_by_user_id,
-    get_point_by_user,
-    log_coupon_claim,
-    restore_points,
-)
+from utils.data import get_repository
+from utils.repository import NicknameMismatchError
 
 log = logging.getLogger(__name__)
 
@@ -126,20 +117,14 @@ async def _handle_point_check(interaction: discord.Interaction) -> None:
         return
 
     nickname = _get_nickname(member)
+    repo = get_repository()
 
     try:
-        point_row = get_point_by_user(nickname, str(member.id))
+        point_row = repo.get_point_by_user(nickname, str(member.id))
     except NicknameMismatchError:
         await interaction.edit_original_response(
             view=_error_view(
                 "닉네임이 일치하지 않아요.\n관리자에게 문의해 주세요."
-            )
-        )
-        return
-    except UserIdNotRegisteredError:
-        await interaction.edit_original_response(
-            view=_error_view(
-                "Discord ID가 등록되지 않았어요.\n관리자에게 문의해 주세요."
             )
         )
         return
@@ -194,11 +179,12 @@ async def _handle_exchange_start(interaction: discord.Interaction) -> None:
 
     nickname = _get_nickname(member)
     user_id = str(member.id)
+    repo = get_repository()
 
     try:
-        existing = get_coupon_by_user_id(user_id)
+        existing = repo.get_coupon_by_user_id(user_id)
     except Exception:
-        log.exception("[교환] 기존 쿠폰 조회 실패")
+        log.exception("[교환] 기존 쿠폰 조회 실패 — user_id=%s", user_id)
         await interaction.edit_original_response(
             view=_error_view("쿠폰 조회 중 오류가 발생했어요.")
         )
@@ -216,18 +202,11 @@ async def _handle_exchange_start(interaction: discord.Interaction) -> None:
         return
 
     try:
-        point_row = get_point_by_user(nickname, user_id)
+        point_row = repo.get_point_by_user(nickname, user_id)
     except NicknameMismatchError:
         await interaction.edit_original_response(
             view=_error_view(
                 "닉네임이 일치하지 않아요.\n관리자에게 문의해 주세요."
-            )
-        )
-        return
-    except UserIdNotRegisteredError:
-        await interaction.edit_original_response(
-            view=_error_view(
-                "Discord ID가 등록되지 않았어요.\n관리자에게 문의해 주세요."
             )
         )
         return
@@ -324,18 +303,11 @@ async def _handle_exchange_confirm(
     nickname: str,
 ) -> None:
     user_id = str(member.id)
+    repo = get_repository()
 
     try:
         async with _exchange_lock:
-            try:
-                existing = get_coupon_by_user_id(user_id)
-            except Exception:
-                log.exception("[교환] 기존 쿠폰 조회 실패 (확인 단계)")
-                await interaction.edit_original_response(
-                    view=_error_view("쿠폰 조회 중 오류가 발생했어요.")
-                )
-                return
-
+            existing = repo.get_coupon_by_user_id(user_id)
             if existing:
                 await interaction.edit_original_response(
                     view=_view(
@@ -347,51 +319,14 @@ async def _handle_exchange_confirm(
                 )
                 return
 
-            if not _has_required_role(member):
+            point_row = repo.get_point_by_user(nickname, user_id)
+            if not point_row or point_row.points < COUPON_COST:
                 await interaction.edit_original_response(
-                    view=_error_view("교환 권한이 없어요.")
+                    view=_error_view("포인트가 부족하거나 사용자를 찾을 수 없어요.")
                 )
                 return
 
-            try:
-                point_row = get_point_by_user(nickname, user_id)
-            except NicknameMismatchError:
-                await interaction.edit_original_response(
-                    view=_error_view(
-                        "닉네임이 일치하지 않아요.\n관리자에게 문의해 주세요."
-                    )
-                )
-                return
-            except UserIdNotRegisteredError:
-                await interaction.edit_original_response(
-                    view=_error_view(
-                        "Discord ID가 등록되지 않았어요.\n관리자에게 문의해 주세요."
-                    )
-                )
-                return
-            except Exception:
-                log.exception("[교환] 포인트 조회 실패 (확인 단계)")
-                await interaction.edit_original_response(
-                    view=_error_view("포인트 조회 중 오류가 발생했어요.")
-                )
-                return
-
-            if not point_row:
-                await interaction.edit_original_response(
-                    view=_error_view("등록되지 않은 사용자예요.")
-                )
-                return
-
-            if point_row.points < COUPON_COST:
-                await interaction.edit_original_response(
-                    view=_error_view(
-                        f"포인트가 부족해요.\n"
-                        f"필요: **{COUPON_COST}P** · 보유: **{point_row.points}P**"
-                    )
-                )
-                return
-
-            available = find_available_coupon()
+            available = repo.find_available_coupon()
             if not available:
                 await interaction.edit_original_response(
                     view=_error_view("발급 가능한 쿠폰이 없어요.")
@@ -399,48 +334,32 @@ async def _handle_exchange_confirm(
                 return
 
             # 포인트 차감
-            deduct_points(
+            repo.deduct_points(
                 point_row.row_index, point_row.points, COUPON_COST
             )
 
             # 쿠폰 할당
             try:
-                assign_coupon(available.row_index, user_id, nickname)
+                repo.assign_coupon(available.coupon_code, user_id)
             except Exception:
                 log.exception("[교환] 쿠폰 할당 실패, 포인트 복구 시도")
                 try:
-                    restore_points(
+                    repo.restore_points(
                         point_row.row_index,
                         point_row.points - COUPON_COST,
                         COUPON_COST,
                     )
                 except Exception:
-                    log.exception(
-                        "[교환] 포인트 복구 실패 — userId=%s, row=%d",
-                        user_id,
-                        point_row.row_index,
-                    )
+                    log.exception("[교환] 포인트 복구 실패 — user_id=%s", user_id)
                 await interaction.edit_original_response(
-                    view=_error_view(
-                        "쿠폰 발급 중 오류가 발생했어요.\n다시 시도해 주세요."
-                    )
+                    view=_error_view("쿠폰 발급 중 오류가 발생했어요.\n다시 시도해 주세요.")
                 )
                 return
-
-            # 로그 기록 (실패해도 교환은 완료)
-            try:
-                log_coupon_claim(
-                    user_id, nickname, available.coupon_code, COUPON_COST
-                )
-            except Exception:
-                log.exception("[교환] 사용 내역 로그 실패")
 
     except Exception:
         log.exception("[교환] 예상치 못한 오류")
         await interaction.edit_original_response(
-            view=_error_view(
-                "교환 처리 중 오류가 발생했어요.\n다시 시도해 주세요."
-            )
+            view=_error_view("교환 처리 중 오류가 발생했어요.\n다시 시도해 주세요.")
         )
         return
 
@@ -462,23 +381,14 @@ async def _handle_exchange_confirm(
 class _DashboardManager(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self._dashboard_sent = False
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        if self._dashboard_sent:
-            return
-        self._dashboard_sent = True
-        await self._ensure_dashboard()
-
-    async def _ensure_dashboard(self) -> None:
+    async def ensure_dashboard(self) -> None:
         cfg = get_config()
         channel = self.bot.get_channel(cfg.DASHBOARD_CHANNEL_ID)
         if not channel or not isinstance(channel, discord.TextChannel):
             log.warning("대시보드 채널을 찾을 수 없습니다 (ID: %s)", cfg.DASHBOARD_CHANNEL_ID)
             return
 
-        # 채널에 봇이 보낸 대시보드가 이미 있으면 생략
         async for msg in channel.history(limit=50):
             if msg.author == self.bot.user:
                 log.info("기존 대시보드 발견, 전송 생략")
@@ -492,4 +402,6 @@ class _DashboardManager(commands.Cog):
 
 async def setup(bot: commands.Bot) -> None:
     bot.add_view(DashboardView())
-    await bot.add_cog(_DashboardManager(bot))
+    cog = _DashboardManager(bot)
+    await bot.add_cog(cog)
+    await cog.ensure_dashboard()
