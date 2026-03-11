@@ -13,3 +13,8 @@ def add_product(name , cost , con , image_url = None):
     res = supabase.table("products").insert(data).execute()
     return [res.data[0]['id'],res.data[0]['product_name']] if res else None
 
+# 사용자 삭제
+# return name : int
+def delete_user(user_id):
+    res = supabase.table("users").delete().eq("user_id", user_id).execute()
+    return res.data[0]['id'] if res else None

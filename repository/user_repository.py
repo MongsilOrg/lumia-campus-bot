@@ -14,7 +14,7 @@ def add_user(discord_id, name , email , point = 0):
     return res.data[0]['id'] if res else None
 
 # 사용자 삭제
-# return id : int
+# return user_name : str
 def delete_user(user_id):
     res = supabase.table("users").delete().eq("user_id", user_id).execute()
-    return res.data[0]['id'] if res else None
+    return res.data[0]['user_name'] if res else None
