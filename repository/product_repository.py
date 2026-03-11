@@ -13,9 +13,9 @@ def fetch_product():
 
 # 상품추가
 # return [id : int , name : str]
-def add_product(name , cost , con , image_url = None):
+def add_product(product_name , cost , con , image_url = None):
     data = {
-        "product_name" : name,
+        "product_name" : product_name,
         "product_cost" : cost,
         "product_image" : image_url,
         "constructor" : con,
@@ -26,8 +26,8 @@ def add_product(name , cost , con , image_url = None):
 
 # 상품 삭제
 # return product_name : str
-def delete_product(name):
-    res = supabase.table("products").delete().eq("product_name", name).execute()
+def delete_product(product_name):
+    res = supabase.table("products").delete().eq("product_name", product_name).execute()
     return res.data[0]['product_name'] if res else None
 
 # 상품 구매
