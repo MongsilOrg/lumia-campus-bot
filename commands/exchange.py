@@ -57,16 +57,27 @@ class DashboardView(discord.ui.LayoutView):
             existing = list(self.children)
             self.clear_items()
 
-            product_lines = "\n".join(
-                f"- **{name}** — {cost}P" for name, cost in products
-            )
             container = discord.ui.Container(accent_colour=discord.Colour.blurple())
             container.add_item(
                 discord.ui.TextDisplay(
-                    f"# 🏪 루미아 상점\n"
-                    f"-# 2025 루미아 캠퍼스\n\n"
-                    f"{product_lines}\n\n"
-                    f"아래 버튼을 눌러 포인트 조회 또는 상품 구매를 시작해 보세요."
+                    "# 🏪 루미아 상점\n"
+                    "-# 루미아 캠퍼스"
+                )
+            )
+            for name, cost, image in products:
+                text = discord.ui.TextDisplay(f"**{name}** — {cost}P")
+                if image:
+                    container.add_item(
+                        discord.ui.Section(
+                            text,
+                            accessory=discord.ui.Thumbnail(image),
+                        )
+                    )
+                else:
+                    container.add_item(text)
+            container.add_item(
+                discord.ui.TextDisplay(
+                    "\n아래 버튼을 눌러 포인트 조회 또는 상품 구매를 시작해 보세요."
                 )
             )
             self.add_item(container)
@@ -220,7 +231,7 @@ def _make_product_select_view(
                 description=f"{cost}P",
                 value=name,
             )
-            for name, cost in products
+            for name, cost, _image in products
         ],
     )
 
@@ -229,7 +240,7 @@ def _make_product_select_view(
             return
         selected_name = select.values[0]
         selected_cost = next(
-            cost for name, cost in products if name == selected_name
+            cost for name, cost, _img in products if name == selected_name
         )
         view.stop()
         confirm_view = _make_buy_confirm_view(
@@ -363,11 +374,6 @@ class _DashboardManager(commands.Cog):
             log.warning("대시보드 채널을 찾을 수 없습니다 (ID: %s)", cfg.DASHBOARD_CHANNEL_ID)
             return
 
-        async for msg in channel.history(limit=50):
-            if msg.author == self.bot.user:
-                log.info("기존 대시보드 발견, 전송 생략")
-                return
-
         try:
             products = await fetch_product()
         except Exception:
@@ -375,6 +381,13 @@ class _DashboardManager(commands.Cog):
             return
 
         view = DashboardView(products=products)
+
+        async for msg in channel.history(limit=50):
+            if msg.author == self.bot.user:
+                await msg.edit(view=view)
+                log.info("기존 대시보드 갱신 완료")
+                return
+
         await channel.send(view=view)
         log.info("대시보드 자동 전송 완료")
 
