@@ -11,7 +11,7 @@ class ProductSystem(commands.Cog):
     @app_commands.default_permissions(administrator=True)
     async def get_product_cmd(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        result = fetch_product()
+        result = await fetch_product()
         if result is None or len(result) == 0:
             await interaction.followup.send("등록된 상품이 없습니다.", ephemeral=True)
             return
@@ -27,7 +27,7 @@ class ProductSystem(commands.Cog):
     async def add_product_cmd(self, interaction: discord.Interaction, name: str, price: int , image_url: str = None):
         await interaction.response.defer(ephemeral=True)
         try:
-          result = add_product(name, price , interaction.user.display_name , image_url)
+          result = await add_product(name, price , interaction.user.display_name , image_url)
           await interaction.followup.send(f"상품 {name}이(가) {price}원으로 추가되었습니다.", ephemeral=True)
         except Exception as e:
             if "23505" in str(e):
@@ -41,7 +41,7 @@ class ProductSystem(commands.Cog):
     @app_commands.default_permissions(administrator=True)
     async def delete_product_cmd(self, interaction: discord.Interaction, name: str):
         await interaction.response.defer(ephemeral=True)
-        result = delete_product(name)
+        result = await delete_product(name)
         if result is None:
             await interaction.followup.send("상품이 존재하지 않습니다.", ephemeral=True)
             return
@@ -51,7 +51,7 @@ class ProductSystem(commands.Cog):
     @app_commands.describe(name="어떤 상품을 구매할지 입력하세요.")
     async def buy_product_cmd(self, interaction: discord.Interaction, name: str):
         await interaction.response.defer(ephemeral=True)
-        result = buy_product(interaction.user.id, name)
+        result = await buy_product(interaction.user.id, name)
         error_messages = [
             '주문하신 상품은 존재하지 않습니다 관리자에게 문의 주세요',
             '포인트가 부족합니다.',
@@ -71,7 +71,7 @@ class ProductSystem(commands.Cog):
     @app_commands.default_permissions(administrator=True)
     async def extract_coupon_code_cmd(self, interaction: discord.Interaction, name: str):
         await interaction.response.defer(ephemeral=True)
-        result = extract_coupon_code(interaction.user.id, name)
+        result = await extract_coupon_code(interaction.user.id, name)
         if result == '재고가 없습니다':
             await interaction.followup.send(result, ephemeral=True)
         else:

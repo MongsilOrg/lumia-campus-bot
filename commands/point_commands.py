@@ -12,7 +12,7 @@ class PointSystem(commands.Cog):
     async def get_point_cmd(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         user_id = interaction.user.id
-        result = fetch_point(user_id)
+        result = await fetch_point(user_id)
         if result is None:
             await interaction.followup.send("포인트 조회 중 오류가 발생했습니다.", ephemeral=True)
             return
@@ -24,7 +24,7 @@ class PointSystem(commands.Cog):
     @app_commands.default_permissions(administrator=True)
     async def get_user_point_cmd(self, interaction: discord.Interaction , member : discord.Member ):
         await interaction.response.defer(ephemeral=True)
-        result = fetch_point(member.id)
+        result = await fetch_point(member.id)
         if result is None:
             await interaction.followup.send("포인트 조회 중 오류가 발생했습니다.", ephemeral=True)
             return
@@ -38,7 +38,7 @@ class PointSystem(commands.Cog):
         if not interaction.user.guild_permissions.administrator:
             await interaction.followup.send("이 명령어는 관리자만 사용할 수 있습니다.", ephemeral=True)
             return
-        result = plus_point(member.id, points)
+        result = await plus_point(member.id, points)
         if result is None:
             await interaction.followup.send("사용자가 존재하지 않습니다.", ephemeral=True)
             return
@@ -52,7 +52,7 @@ class PointSystem(commands.Cog):
         if not interaction.user.guild_permissions.administrator:
             await interaction.followup.send("이 명령어는 관리자만 사용할 수 있습니다.", ephemeral=True)
             return
-        result = minus_point(member.id, points)
+        result = await minus_point(member.id, points)
         if result is None:
             await interaction.followup.send("사용자가 존재하지 않습니다.", ephemeral=True)
             return
@@ -63,11 +63,11 @@ class PointSystem(commands.Cog):
     @app_commands.default_permissions(administrator=True)
     async def update_point_cmd(self, interaction: discord.Interaction, member : discord.Member , points: int):
         await interaction.response.defer(ephemeral=True)
-        prev = fetch_point(member.id)
+        prev = await fetch_point(member.id)
         if not interaction.user.guild_permissions.administrator:
             await interaction.followup.send("이 명령어는 관리자만 사용할 수 있습니다.", ephemeral=True)
             return
-        result = update_point(member.id, points)
+        result = await update_point(member.id, points)
         if result is None:
             await interaction.followup.send("사용자가 존재하지 않습니다.", ephemeral=True)
             return

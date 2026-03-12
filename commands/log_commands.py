@@ -13,7 +13,7 @@ class LogSystem(commands.Cog):
     async def get_log_cmd(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         page_size = 20
-        result, total_count = get_log(interaction.user.id, page=1, page_size=page_size)
+        result, total_count = await get_log(interaction.user.id, page=1, page_size=page_size)
         if not result:
             await interaction.followup.send("구매 이력이 없습니다.", ephemeral=True)
             return
@@ -33,7 +33,7 @@ class LogSystem(commands.Cog):
     async def get_user_log_cmd(self, interaction: discord.Interaction, member : discord.Member):
         await interaction.response.defer(ephemeral=True)
         page_size = 20
-        result, total_count = get_log(member.id, page=1, page_size=page_size)
+        result, total_count = await get_log(member.id, page=1, page_size=page_size)
         if not result:
             await interaction.followup.send("구매 이력이 없습니다.", ephemeral=True)
             return

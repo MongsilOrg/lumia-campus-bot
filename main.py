@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-
+from service.superbase import init_supabase
 import discord
 from discord.ext import commands
 
@@ -28,7 +28,7 @@ def main() -> None:
 
         if not hasattr(bot, "_setup_done"):
             bot._setup_done = True
-
+            await init_supabase()
             await bot.load_extension("commands.exchange")
             await bot.load_extension("commands.point_commands")
             await bot.load_extension("commands.user_commands")

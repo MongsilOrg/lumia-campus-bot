@@ -12,7 +12,7 @@ class UserSystem(commands.Cog):
     @app_commands.default_permissions(administrator=True)
     async def add_user_cmd(self, interaction: discord.Interaction , member : discord.Member , email : str , point : int = 0):
         await interaction.response.defer(ephemeral=True)
-        result = add_user(member.id, member.display_name, email , point)
+        result = await add_user(member.id, member.display_name, email , point)
         if result is None:
             await interaction.followup.send("유저 등록에 실패 했습니다.", ephemeral=True)
             return
@@ -23,7 +23,7 @@ class UserSystem(commands.Cog):
     @app_commands.default_permissions(administrator=True)
     async def delete_user_cmd(self, interaction: discord.Interaction , member : discord.Member):
         await interaction.response.defer(ephemeral=True)
-        result = delete_user(member.id)
+        result = await delete_user(member.id)
         if result is None:
             await interaction.followup.send("유저 삭제에 실패 했습니다.", ephemeral=True)
             return

@@ -1,6 +1,13 @@
 import os
-from supabase import create_client, Client
+from supabase import acreate_client, AsyncClient
 
-url: str = os.environ.get("SUPABASE_URL")
-key: str = os.environ.get("SUPABASE_KEY")
-supabase: Client = create_client(url, key)
+url = os.getenv("SUPABASE_URL")
+key = os.getenv("SUPABASE_KEY")
+
+supabase: AsyncClient | None = None
+
+async def init_supabase():
+    global supabase
+    if supabase is None:
+        supabase = await acreate_client(url, key)
+    return supabase
