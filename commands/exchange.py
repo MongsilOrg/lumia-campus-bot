@@ -290,7 +290,7 @@ def _make_buy_confirm_view(
             return
         view.stop()
         await btn_interaction.response.edit_message(
-            view=_view("구매가 취소되었어요.", discord.Colour.greyple())
+            view=_view("🚫 구매가 취소되었어요.", discord.Colour.greyple())
         )
 
     confirm_btn.callback = on_confirm
@@ -321,14 +321,17 @@ async def _handle_buy_confirm(
         )
         return
 
-    error_messages = [
-        "주문하신 상품은 존재하지 않습니다 관리자에게 문의 주세요",
-        "포인트가 부족합니다.",
-        "재고가 없습니다 관리자에게 문의 주세요",
-    ]
+    error_map = {
+        "주문하신 상품은 존재하지 않습니다 관리자에게 문의 주세요":
+            "상품을 찾을 수 없어요.\n관리자에게 문의해 주세요.",
+        "포인트가 부족합니다.":
+            "포인트가 부족해요.",
+        "재고가 없습니다 관리자에게 문의 주세요":
+            "재고가 없어요.\n관리자에게 문의해 주세요.",
+    }
 
-    if result is None or result[0] in error_messages:
-        error_msg = result[0] if result else "알 수 없는 오류가 발생했어요."
+    if result is None or result[0] in error_map:
+        error_msg = error_map.get(result[0], "알 수 없는 오류가 발생했어요.") if result else "알 수 없는 오류가 발생했어요."
         await interaction.edit_original_response(
             view=_error_view(error_msg)
         )
