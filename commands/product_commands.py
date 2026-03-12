@@ -18,7 +18,7 @@ class ProductSystem(commands.Cog):
         msg = ""
         for item in result:
             name, cost = item
-            msg += f"상품명: {name}, 가격: {cost}원\n"
+            msg += f"상품명: {name}, 가격: {cost}포인트\n"
         await interaction.followup.send(f"현재 등록된 상품 목록:\n{msg}", ephemeral=True)
 
     @app_commands.command(name="상품_추가", description="상품을 추가합니다.")
@@ -28,7 +28,7 @@ class ProductSystem(commands.Cog):
         await interaction.response.defer(ephemeral=True)
         try:
             result = await add_product(name, price , interaction.user.display_name , image_url)
-            await interaction.followup.send(f"상품 {name}이(가) {price}원으로 추가되었습니다.", ephemeral=True)
+            await interaction.followup.send(f"상품 {name}이(가) {price}포인트로 추가되었습니다.", ephemeral=True)
         except Exception as e:
             if "23505" in str(e):
                 await interaction.followup.send(f"⚠️ 이미 등록된 상품명입니다: '{name}'", ephemeral=True)
