@@ -28,7 +28,7 @@ class PointSystem(commands.Cog):
         if result is None:
             await interaction.followup.send("포인트 조회 중 오류가 발생했습니다.", ephemeral=True)
             return
-        await interaction.followup.send(f"{member.display_name}님의 현재 포인트는 {result}점입니다.", ephemeral=True)
+        await interaction.followup.send(f"{member.display_name}님의 현재 포인트는 {result}P입니다.", ephemeral=True)
 
     @app_commands.command(name="포인트_추가", description="포인트를 추가합니다.")
     @app_commands.describe(member="유저를 선택하세요.", points="추가할 포인트 양")
