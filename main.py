@@ -30,12 +30,14 @@ def main() -> None:
             bot._setup_done = True
 
             await bot.load_extension("commands.exchange")
-
+            await bot.load_extension("commands.point_commands")
             # 기존 슬래시 커맨드 정리 (서버에서 제거)
             guild = discord.Object(id=cfg.GUILD_ID)
-            bot.tree.clear_commands(guild=guild)
+            bot.tree.copy_global_to(guild=guild)
             await bot.tree.sync(guild=guild)
-            log.info("슬래시 커맨드 정리 완료 (guild=%s)", cfg.GUILD_ID)
+            log.info("슬래시 커맨드 동기화 완료")
+
+    
 
     bot.run(cfg.BOT_TOKEN, log_handler=None)
 
