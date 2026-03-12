@@ -8,7 +8,7 @@ async def fetch_product():
         .select("*")
         .execute()
     )
-    return [[data['product_name'], data['product_cost']] for data in response.data]
+    return [[data['product_name'], data['product_cost'], data.get('product_image')] for data in response.data]
 
 # 상품추가
 # return [id : int , name : str]
