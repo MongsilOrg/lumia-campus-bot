@@ -90,14 +90,13 @@ class DashboardView(discord.ui.LayoutView):
 
 
 async def _handle_point_check(interaction: discord.Interaction) -> None:
-    await interaction.response.send_message(
-        view=_loading_view("포인트를 조회하고 있어요..."), ephemeral=True
-    )
+    if not interaction.response.is_done():
+        await interaction.response.defer(ephemeral=True)
 
     member = interaction.user
     if not isinstance(member, discord.Member):
-        await interaction.edit_original_response(
-            view=_error_view("서버 멤버 정보를 확인할 수 없어요.")
+        await interaction.followup.send(
+            view=_error_view("서버 멤버 정보를 확인할 수 없어요."), ephemeral=True
         )
         return
 
@@ -105,27 +104,29 @@ async def _handle_point_check(interaction: discord.Interaction) -> None:
         points = await fetch_point(member.id)
     except Exception:
         log.exception("[포인트 조회] 데이터 조회 실패")
-        await interaction.edit_original_response(
-            view=_error_view("포인트 조회 중 오류가 발생했어요.")
+        await interaction.followup.send(
+            view=_error_view("포인트 조회 중 오류가 발생했어요."), ephemeral=True
         )
         return
 
     if points is None:
-        await interaction.edit_original_response(
+        await interaction.followup.send(
             view=_error_view(
                 "등록되지 않은 사용자예요.\n관리자에게 문의해 주세요."
-            )
+            ),
+            ephemeral=True,
         )
         return
 
     nickname = _get_nickname(member)
-    await interaction.edit_original_response(
+    await interaction.followup.send(
         view=_view(
             f"## 📊 포인트 조회\n\n"
             f"**{nickname}**님의 보유 포인트\n"
             f"# {points}P",
             discord.Colour.blue(),
-        )
+        ),
+        ephemeral=True,
     )
 
 
@@ -133,23 +134,23 @@ async def _handle_point_check(interaction: discord.Interaction) -> None:
 
 
 async def _handle_buy_start(interaction: discord.Interaction) -> None:
-    await interaction.response.send_message(
-        view=_loading_view("정보를 확인하고 있어요..."), ephemeral=True
-    )
+    if not interaction.response.is_done():
+        await interaction.response.defer(ephemeral=True)
 
     member = interaction.user
     if not isinstance(member, discord.Member):
-        await interaction.edit_original_response(
-            view=_error_view("서버 멤버 정보를 확인할 수 없어요.")
+        await interaction.followup.send(
+            view=_error_view("서버 멤버 정보를 확인할 수 없어요."), ephemeral=True
         )
         return
 
     if not _has_required_role(member):
-        await interaction.edit_original_response(
+        await interaction.followup.send(
             view=_error_view(
                 "구매 권한이 없어요.\n"
                 "학생회·학부생·재학생·신입생 역할이 필요해요."
-            )
+            ),
+            ephemeral=True,
         )
         return
 
@@ -158,27 +159,28 @@ async def _handle_buy_start(interaction: discord.Interaction) -> None:
         points = await fetch_point(member.id)
     except Exception:
         log.exception("[구매] 데이터 조회 실패")
-        await interaction.edit_original_response(
-            view=_error_view("데이터 조회 중 오류가 발생했어요.")
+        await interaction.followup.send(
+            view=_error_view("데이터 조회 중 오류가 발생했어요."), ephemeral=True
         )
         return
 
     if points is None:
-        await interaction.edit_original_response(
+        await interaction.followup.send(
             view=_error_view(
                 "등록되지 않은 사용자예요.\n관리자에게 문의해 주세요."
-            )
+            ),
+            ephemeral=True,
         )
         return
 
     if not products:
-        await interaction.edit_original_response(
-            view=_error_view("현재 구매 가능한 상품이 없어요.")
+        await interaction.followup.send(
+            view=_error_view("현재 구매 가능한 상품이 없어요."), ephemeral=True
         )
         return
 
     select_view = _make_product_select_view(member, products, points)
-    await interaction.edit_original_response(view=select_view)
+    await interaction.followup.send(view=select_view, ephemeral=True)
 
 
 # ── 상품 선택 View ──
@@ -225,7 +227,10 @@ def _make_product_select_view(
         confirm_view = _make_buy_confirm_view(
             member, nickname, selected_name, selected_cost, points
         )
-        await select_interaction.response.edit_message(view=confirm_view)
+        if not select_interaction.response.is_done():
+            await select_interaction.response.edit_message(view=confirm_view)
+        else:
+            await select_interaction.edit_original_response(view=confirm_view)
 
     select.callback = on_select
     row.add_item(select)
@@ -270,18 +275,28 @@ def _make_buy_confirm_view(
         if btn_interaction.user.id != member_id:
             return
         view.stop()
-        await btn_interaction.response.edit_message(
-            view=_loading_view("구매를 처리하고 있어요...")
-        )
+        if not btn_interaction.response.is_done():
+            await btn_interaction.response.edit_message(
+                view=_loading_view("구매를 처리하고 있어요...")
+            )
+        else:
+            await btn_interaction.edit_original_response(
+                view=_loading_view("구매를 처리하고 있어요...")
+            )
         await _handle_buy_confirm(btn_interaction, member, product_name)
 
     async def on_cancel(btn_interaction: discord.Interaction):
         if btn_interaction.user.id != member_id:
             return
         view.stop()
-        await btn_interaction.response.edit_message(
-            view=_view("🚫 구매가 취소되었어요.", discord.Colour.greyple())
-        )
+        if not btn_interaction.response.is_done():
+            await btn_interaction.response.edit_message(
+                view=_view("🚫 구매가 취소되었어요.", discord.Colour.greyple())
+            )
+        else:
+            await btn_interaction.edit_original_response(
+                view=_view("🚫 구매가 취소되었어요.", discord.Colour.greyple())
+            )
 
     confirm_btn.callback = on_confirm
     cancel_btn.callback = on_cancel
