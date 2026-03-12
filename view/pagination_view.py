@@ -7,9 +7,16 @@ class PaginationView(discord.ui.View):
         self.user_id = user_id
         self.page = current_page
         self.total = total_pages
+        self.update_button_states()
 
+    def update_button_states(self):
+        self.prev.disabled = (self.page <= 1)
+        self.next.disabled = (self.page >= self.total)
+        
     async def update_view(self, interaction: discord.Interaction):
         result, _ = await get_log(self.user_id, page=self.page)
+        self.update_button_states()
+        
         table = f"{'번호':<5} | {'상품명':<10} | {'쿠폰번호':<15}\n" + "-" * 35 + "\n"
         for i, item in enumerate(result, start=(self.page - 1) * 20 + 1):
             table += f"{i:<6} | {item[0]:<11} | {item[1]:<15}\n"
@@ -24,7 +31,8 @@ class PaginationView(discord.ui.View):
             self.page -= 1
             await self.update_view(interaction)
         else:
-            await interaction.response.send_message("첫 페이지입니다.", ephemeral=True)
+            self.update_button_states()
+            await interaction.response.edit_message(view=self)
 
     @discord.ui.button(label="다음", style=discord.ButtonStyle.primary)
     async def next(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -32,4 +40,5 @@ class PaginationView(discord.ui.View):
             self.page += 1
             await self.update_view(interaction)
         else:
-            await interaction.response.send_message("마지막 페이지입니다.", ephemeral=True)
+            self.update_button_states()
+            await interaction.response.edit_message(view=self)
