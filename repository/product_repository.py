@@ -20,7 +20,6 @@ def add_product(product_name , cost , con , image_url = None):
         "product_image" : image_url,
         "constructor" : con,
     }
-
     res = supabase.table("products").insert(data).execute()
     return [res.data[0]['id'],res.data[0]['product_name']] if res else None
 
@@ -38,7 +37,6 @@ def delete_product(product_name):
 # return = [coupon code : str , point : int]
 def buy_product(user_id , product_name):
     from repository.point_repository import fetch_point
-
     res = supabase.rpc("buy_product", {'u_id': user_id, 'p_name': product_name}).execute()
     point = fetch_point(user_id)
     data = res.data

@@ -9,7 +9,6 @@ def add_user(discord_id, name , email , point = 0):
         "user_point" : point,
         "user_email" : email,
     }
-
     res = supabase.table("users").insert(data).execute()
     return res.data[0]['id'] if res else None
 
