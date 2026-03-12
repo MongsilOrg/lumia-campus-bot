@@ -12,21 +12,29 @@ class ProductSystem(commands.Cog):
     async def get_product_cmd(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         result = fetch_product()
-        if result is None:
-            await interaction.followup.send("상품 조회 중 오류가 발생했습니다.", ephemeral=True)
+        if result is None or len(result) == 0:
+            await interaction.followup.send("등록된 상품이 없습니다.", ephemeral=True)
             return
-        await interaction.followup.send(f"현재 등록된 상품들은 {result}입니다.", ephemeral=True)
+        msg = ""
+        for item in result:
+            name, cost = item
+            msg += f"상품명: {name}, 가격: {cost}원\n"
+        await interaction.followup.send(f"현재 등록된 상품 목록:\n{msg}", ephemeral=True)
 
     @app_commands.command(name="상품_추가", description="상품을 추가합니다.")
     @app_commands.describe(name="상품 이름을 입력하세요.", price="상품 가격을 입력하세요.", image_url="상품 이미지 URL을 입력하세요.(선택사항)") 
     @app_commands.default_permissions(administrator=True)
     async def add_product_cmd(self, interaction: discord.Interaction, name: str, price: int , image_url: str = None):
         await interaction.response.defer(ephemeral=True)
-        result = add_product(name, price , interaction.user.display_name , image_url)
-        if result is None:
-            await interaction.followup.send("상품 추가 중 오류가 발생했습니다.", ephemeral=True)
-            return
-        await interaction.followup.send(f"상품 {name}이(가) {price}원으로 추가되었습니다.", ephemeral=True)
+        try:
+          result = add_product(name, price , interaction.user.display_name , image_url)
+          await interaction.followup.send(f"상품 {name}이(가) {price}원으로 추가되었습니다.", ephemeral=True)
+        except Exception as e:
+            if "23505" in str(e):
+                await interaction.followup.send(f"⚠️ 이미 등록된 상품명입니다: '{name}'", ephemeral=True)
+            else:
+                await interaction.followup.send(f"상품 추가 중 오류가 발생했습니다: {e}", ephemeral=True)
+        
 
     @app_commands.command(name="상품_삭제", description="상품을 삭제합니다.")
     @app_commands.describe(name="상품 이름을 입력하세요.")

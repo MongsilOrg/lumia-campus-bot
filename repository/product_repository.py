@@ -8,8 +8,7 @@ def fetch_product():
         .select("*")
         .execute()
     )
-    res = response.data
-    return [data['product_name'] for data in res] if res else []
+    return [[data['product_name'], data['product_cost']] for data in response.data]
 
 # 상품추가
 # return [id : int , name : str]
@@ -54,3 +53,12 @@ def extract_coupon_code(user_id , product_name):
     res = supabase.rpc("extract_code", {'u_id': user_id, 'p_name': product_name}).execute()
     data = res.data
     return data if res else None
+
+def add_coupon_code(product_name , coupon_code):
+    data = {
+        "store_name" : product_name,
+        "store_product" : coupon_code,
+
+    }
+    res = supabase.table("store").insert(data).execute()
+    return res.data if res else None
