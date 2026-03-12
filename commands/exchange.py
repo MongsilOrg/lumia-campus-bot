@@ -1,26 +1,17 @@
 from __future__ import annotations
 
-import asyncio
 import logging
-import os
 
 import discord
 from discord.ext import commands
 
 from utils.config import get_config
-from utils.data import get_repository
-from utils.repository import NicknameMismatchError
+from repository.point_repository import fetch_point
+from repository.product_repository import fetch_product, buy_product
 
 log = logging.getLogger(__name__)
 
-COUPON_COST = 100
 REQUIRED_ROLES = {"학생회", "학부생", "재학생", "신입생"}
-
-_exchange_lock = asyncio.Lock()
-
-ICON_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)), "profile-icon.webp"
-)
 
 
 # ── 공통 뷰 빌더 ──
@@ -60,23 +51,27 @@ def _has_required_role(member: discord.Member) -> bool:
 
 
 class DashboardView(discord.ui.LayoutView):
-    def __init__(self):
+    def __init__(self, products=None):
         super().__init__(timeout=None)
+        if products is not None:
+            existing = list(self.children)
+            self.clear_items()
 
-    container = discord.ui.Container["DashboardView"](
-        discord.ui.Section["DashboardView"](
-            discord.ui.TextDisplay["DashboardView"](
-                "# 🎓 프로필 아이콘 교환\n"
-                "-# 2025 루미아 캠퍼스\n\n"
-                "프로필 아이콘을 **100P**로 교환할 수 있어요.\n"
-                "아래 버튼을 눌러 포인트 조회 또는 교환을 시작해 보세요."
-            ),
-            accessory=discord.ui.Thumbnail["DashboardView"](
-                "attachment://profile-icon.webp"
-            ),
-        ),
-        accent_colour=discord.Colour.blurple(),
-    )
+            product_lines = "\n".join(
+                f"- **{name}** — {cost}P" for name, cost in products
+            )
+            container = discord.ui.Container(accent_colour=discord.Colour.blurple())
+            container.add_item(
+                discord.ui.TextDisplay(
+                    f"# 🏪 루미아 상점\n"
+                    f"-# 2025 루미아 캠퍼스\n\n"
+                    f"{product_lines}\n\n"
+                    f"아래 버튼을 눌러 포인트 조회 또는 상품 구매를 시작해 보세요."
+                )
+            )
+            self.add_item(container)
+            for child in existing:
+                self.add_item(child)
 
     row: discord.ui.ActionRow[DashboardView] = discord.ui.ActionRow()
 
@@ -91,14 +86,14 @@ class DashboardView(discord.ui.LayoutView):
         await _handle_point_check(interaction)
 
     @row.button(
-        label="🎁 교환하기",
+        label="🛒 상품 구매",
         custom_id="dashboard:exchange",
         style=discord.ButtonStyle.primary,
     )
-    async def exchange_button(
+    async def buy_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        await _handle_exchange_start(interaction)
+        await _handle_buy_start(interaction)
 
 
 # ── 포인트 조회 ──
@@ -116,18 +111,8 @@ async def _handle_point_check(interaction: discord.Interaction) -> None:
         )
         return
 
-    nickname = _get_nickname(member)
-    repo = get_repository()
-
     try:
-        point_row = repo.get_point_by_user(nickname, str(member.id))
-    except NicknameMismatchError:
-        await interaction.edit_original_response(
-            view=_error_view(
-                "닉네임이 일치하지 않아요.\n관리자에게 문의해 주세요."
-            )
-        )
-        return
+        points = await fetch_point(member.id)
     except Exception:
         log.exception("[포인트 조회] 데이터 조회 실패")
         await interaction.edit_original_response(
@@ -135,7 +120,7 @@ async def _handle_point_check(interaction: discord.Interaction) -> None:
         )
         return
 
-    if not point_row:
+    if points is None:
         await interaction.edit_original_response(
             view=_error_view(
                 "등록되지 않은 사용자예요.\n관리자에게 문의해 주세요."
@@ -143,20 +128,21 @@ async def _handle_point_check(interaction: discord.Interaction) -> None:
         )
         return
 
+    nickname = _get_nickname(member)
     await interaction.edit_original_response(
         view=_view(
             f"## 📊 포인트 조회\n\n"
-            f"**{point_row.nickname}**님의 보유 포인트\n"
-            f"# {point_row.points}P",
+            f"**{nickname}**님의 보유 포인트\n"
+            f"# {points}P",
             discord.Colour.blue(),
         )
     )
 
 
-# ── 교환 시작 ──
+# ── 상품 구매 시작 ──
 
 
-async def _handle_exchange_start(interaction: discord.Interaction) -> None:
+async def _handle_buy_start(interaction: discord.Interaction) -> None:
     await interaction.response.send_message(
         view=_loading_view("정보를 확인하고 있어요..."), ephemeral=True
     )
@@ -171,53 +157,23 @@ async def _handle_exchange_start(interaction: discord.Interaction) -> None:
     if not _has_required_role(member):
         await interaction.edit_original_response(
             view=_error_view(
-                "교환 권한이 없어요.\n"
+                "구매 권한이 없어요.\n"
                 "학생회·학부생·재학생·신입생 역할이 필요해요."
             )
         )
         return
 
-    nickname = _get_nickname(member)
-    user_id = str(member.id)
-    repo = get_repository()
-
     try:
-        existing = repo.get_coupon_by_user_id(user_id)
+        products = await fetch_product()
+        points = await fetch_point(member.id)
     except Exception:
-        log.exception("[교환] 기존 쿠폰 조회 실패 — user_id=%s", user_id)
+        log.exception("[구매] 데이터 조회 실패")
         await interaction.edit_original_response(
-            view=_error_view("쿠폰 조회 중 오류가 발생했어요.")
+            view=_error_view("데이터 조회 중 오류가 발생했어요.")
         )
         return
 
-    if existing:
-        await interaction.edit_original_response(
-            view=_view(
-                f"## 🎫 이미 발급된 쿠폰\n\n"
-                f"쿠폰 코드: **{existing.coupon_code}**\n"
-                f"발급 일시: {existing.assigned_at}",
-                discord.Colour.gold(),
-            )
-        )
-        return
-
-    try:
-        point_row = repo.get_point_by_user(nickname, user_id)
-    except NicknameMismatchError:
-        await interaction.edit_original_response(
-            view=_error_view(
-                "닉네임이 일치하지 않아요.\n관리자에게 문의해 주세요."
-            )
-        )
-        return
-    except Exception:
-        log.exception("[교환] 포인트 조회 실패")
-        await interaction.edit_original_response(
-            view=_error_view("포인트 조회 중 오류가 발생했어요.")
-        )
-        return
-
-    if not point_row:
+    if points is None:
         await interaction.edit_original_response(
             view=_error_view(
                 "등록되지 않은 사용자예요.\n관리자에게 문의해 주세요."
@@ -225,26 +181,78 @@ async def _handle_exchange_start(interaction: discord.Interaction) -> None:
         )
         return
 
-    if point_row.points < COUPON_COST:
+    if not products:
         await interaction.edit_original_response(
-            view=_error_view(
-                f"포인트가 부족해요.\n"
-                f"필요: **{COUPON_COST}P** · 보유: **{point_row.points}P**"
-            )
+            view=_error_view("현재 구매 가능한 상품이 없어요.")
         )
         return
 
-    confirm_view = _make_confirm_view(
-        member, nickname, point_row.points, COUPON_COST
+    select_view = _make_product_select_view(member, products, points)
+    await interaction.edit_original_response(view=select_view)
+
+
+# ── 상품 선택 View ──
+
+
+def _make_product_select_view(
+    member: discord.Member, products: list, points: int
+) -> discord.ui.LayoutView:
+    view = discord.ui.LayoutView(timeout=180)
+    member_id = member.id
+    nickname = _get_nickname(member)
+
+    container = discord.ui.Container(accent_colour=discord.Colour.blurple())
+    container.add_item(
+        discord.ui.TextDisplay(
+            f"## 🛒 상품 구매\n\n"
+            f"**{nickname}**님, 구매할 상품을 선택해 주세요.\n"
+            f"보유 포인트: **{points}P**"
+        )
     )
-    await interaction.edit_original_response(view=confirm_view)
+    view.add_item(container)
+
+    row = discord.ui.ActionRow()
+    select = discord.ui.Select(
+        placeholder="상품을 선택해 주세요",
+        options=[
+            discord.SelectOption(
+                label=name,
+                description=f"{cost}P",
+                value=name,
+            )
+            for name, cost in products
+        ],
+    )
+
+    async def on_select(select_interaction: discord.Interaction):
+        if select_interaction.user.id != member_id:
+            return
+        selected_name = select.values[0]
+        selected_cost = next(
+            cost for name, cost in products if name == selected_name
+        )
+        view.stop()
+        confirm_view = _make_buy_confirm_view(
+            member, nickname, selected_name, selected_cost, points
+        )
+        await select_interaction.response.edit_message(view=confirm_view)
+
+    select.callback = on_select
+    row.add_item(select)
+    view.add_item(row)
+
+    return view
 
 
-# ── 교환 확인 View (동적 생성) ──
+# ── 구매 확인 View ──
 
 
-def _make_confirm_view(
-    member: discord.Member, nickname: str, points: int, cost: int
+def _make_buy_confirm_view(
+    member: discord.Member,
+    nickname: str,
+    product_name: str,
+    product_cost: int,
+    points: int,
 ) -> discord.ui.LayoutView:
     view = discord.ui.LayoutView(timeout=180)
     member_id = member.id
@@ -252,17 +260,17 @@ def _make_confirm_view(
     container = discord.ui.Container(accent_colour=discord.Colour.blurple())
     container.add_item(
         discord.ui.TextDisplay(
-            f"## 🎁 프로필 아이콘 교환\n\n"
-            f"**{nickname}**님, 프로필 아이콘을 교환할까요?\n\n"
-            f"차감 포인트: **-{cost}P**\n"
-            f"보유 → 잔여: **{points}P** → **{points - cost}P**"
+            f"## 🛒 구매 확인\n\n"
+            f"**{nickname}**님, **{product_name}**을(를) 구매할까요?\n\n"
+            f"상품 가격: **{product_cost}P**\n"
+            f"보유 포인트: **{points}P**"
         )
     )
     view.add_item(container)
 
     row = discord.ui.ActionRow()
     confirm_btn = discord.ui.Button(
-        label="교환하기", style=discord.ButtonStyle.success
+        label="구매하기", style=discord.ButtonStyle.success
     )
     cancel_btn = discord.ui.Button(
         label="취소", style=discord.ButtonStyle.secondary
@@ -273,16 +281,16 @@ def _make_confirm_view(
             return
         view.stop()
         await btn_interaction.response.edit_message(
-            view=_loading_view("교환을 처리하고 있어요...")
+            view=_loading_view("구매를 처리하고 있어요...")
         )
-        await _handle_exchange_confirm(btn_interaction, member, nickname)
+        await _handle_buy_confirm(btn_interaction, member, product_name)
 
     async def on_cancel(btn_interaction: discord.Interaction):
         if btn_interaction.user.id != member_id:
             return
         view.stop()
         await btn_interaction.response.edit_message(
-            view=_view("교환이 취소되었어요.", discord.Colour.greyple())
+            view=_view("구매가 취소되었어요.", discord.Colour.greyple())
         )
 
     confirm_btn.callback = on_confirm
@@ -294,82 +302,45 @@ def _make_confirm_view(
     return view
 
 
-# ── 교환 실행 ──
+# ── 구매 실행 ──
 
 
-async def _handle_exchange_confirm(
+async def _handle_buy_confirm(
     interaction: discord.Interaction,
     member: discord.Member,
-    nickname: str,
+    product_name: str,
 ) -> None:
-    user_id = str(member.id)
-    repo = get_repository()
+    nickname = _get_nickname(member)
 
     try:
-        async with _exchange_lock:
-            existing = repo.get_coupon_by_user_id(user_id)
-            if existing:
-                await interaction.edit_original_response(
-                    view=_view(
-                        f"## 🎫 이미 발급된 쿠폰\n\n"
-                        f"쿠폰 코드: **{existing.coupon_code}**\n"
-                        f"발급 일시: {existing.assigned_at}",
-                        discord.Colour.gold(),
-                    )
-                )
-                return
-
-            point_row = repo.get_point_by_user(nickname, user_id)
-            if not point_row or point_row.points < COUPON_COST:
-                await interaction.edit_original_response(
-                    view=_error_view("포인트가 부족하거나 사용자를 찾을 수 없어요.")
-                )
-                return
-
-            available = repo.find_available_coupon()
-            if not available:
-                await interaction.edit_original_response(
-                    view=_error_view("발급 가능한 쿠폰이 없어요.")
-                )
-                return
-
-            # 포인트 차감
-            repo.deduct_points(
-                point_row.row_index, point_row.points, COUPON_COST
-            )
-
-            # 쿠폰 할당
-            try:
-                repo.assign_coupon(available.coupon_code, user_id)
-            except Exception:
-                log.exception("[교환] 쿠폰 할당 실패, 포인트 복구 시도")
-                try:
-                    repo.restore_points(
-                        point_row.row_index,
-                        point_row.points - COUPON_COST,
-                        COUPON_COST,
-                    )
-                except Exception:
-                    log.exception("[교환] 포인트 복구 실패 — user_id=%s", user_id)
-                await interaction.edit_original_response(
-                    view=_error_view("쿠폰 발급 중 오류가 발생했어요.\n다시 시도해 주세요.")
-                )
-                return
-
+        result = await buy_product(member.id, product_name)
     except Exception:
-        log.exception("[교환] 예상치 못한 오류")
+        log.exception("[구매] 예상치 못한 오류")
         await interaction.edit_original_response(
-            view=_error_view("교환 처리 중 오류가 발생했어요.\n다시 시도해 주세요.")
+            view=_error_view("구매 처리 중 오류가 발생했어요.\n다시 시도해 주세요.")
         )
         return
 
-    # 성공
+    error_messages = [
+        "주문하신 상품은 존재하지 않습니다 관리자에게 문의 주세요",
+        "포인트가 부족합니다.",
+        "재고가 없습니다 관리자에게 문의 주세요",
+    ]
+
+    if result is None or result[0] in error_messages:
+        error_msg = result[0] if result else "알 수 없는 오류가 발생했어요."
+        await interaction.edit_original_response(
+            view=_error_view(error_msg)
+        )
+        return
+
+    coupon_code, remaining_points = result
     await interaction.edit_original_response(
         view=_view(
-            f"## ✅ 교환 완료\n\n"
-            f"**{nickname}**님의 프로필 아이콘 쿠폰이 발급되었어요.\n"
-            f"# {available.coupon_code}\n\n"
-            f"차감: **-{COUPON_COST}P** · 잔여: **{point_row.points - COUPON_COST}P**",
+            f"## ✅ 구매 완료\n\n"
+            f"**{nickname}**님의 **{product_name}** 쿠폰이 발급되었어요.\n"
+            f"# {coupon_code}\n\n"
+            f"잔여 포인트: **{remaining_points}P**",
             discord.Colour.green(),
         )
     )
@@ -394,9 +365,14 @@ class _DashboardManager(commands.Cog):
                 log.info("기존 대시보드 발견, 전송 생략")
                 return
 
-        view = DashboardView()
-        file = discord.File(ICON_PATH, filename="profile-icon.webp")
-        await channel.send(view=view, file=file)
+        try:
+            products = await fetch_product()
+        except Exception:
+            log.exception("상품 목록 조회 실패")
+            return
+
+        view = DashboardView(products=products)
+        await channel.send(view=view)
         log.info("대시보드 자동 전송 완료")
 
 
