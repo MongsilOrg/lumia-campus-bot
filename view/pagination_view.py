@@ -9,7 +9,7 @@ class PaginationView(discord.ui.View):
         self.total = total_pages
 
     async def update_view(self, interaction: discord.Interaction):
-        result, _ = get_log(self.user_id, page=self.page)
+        result, _ = await get_log(self.user_id, page=self.page)
         table = f"{'번호':<5} | {'상품명':<10} | {'쿠폰번호':<15}\n" + "-" * 35 + "\n"
         for i, item in enumerate(result, start=(self.page - 1) * 20 + 1):
             table += f"{i:<6} | {item[0]:<11} | {item[1]:<15}\n"
