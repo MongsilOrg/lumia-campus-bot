@@ -31,6 +31,9 @@ def main() -> None:
 
             await bot.load_extension("commands.exchange")
             await bot.load_extension("commands.point_commands")
+            await bot.load_extension("commands.user_commands")
+            await bot.load_extension("commands.log_commands")
+            await bot.load_extension("commands.product_commands")
             # 기존 슬래시 커맨드 정리 (서버에서 제거)
             guild = discord.Object(id=cfg.GUILD_ID)
             bot.tree.copy_global_to(guild=guild)
