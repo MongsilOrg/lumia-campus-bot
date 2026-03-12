@@ -6,34 +6,13 @@ import discord
 from discord.ext import commands
 
 from utils.config import get_config
+from utils.views import view as _view, loading_view as _loading_view, error_view as _error_view
 from repository.point_repository import fetch_point
 from repository.product_repository import fetch_product, buy_product
 
 log = logging.getLogger(__name__)
 
 REQUIRED_ROLES = {"학생회", "학부생", "재학생", "신입생"}
-
-
-# ── 공통 뷰 빌더 ──
-
-
-def _view(
-    text: str,
-    colour: discord.Colour,
-) -> discord.ui.LayoutView:
-    view = discord.ui.LayoutView()
-    container = discord.ui.Container(accent_colour=colour)
-    container.add_item(discord.ui.TextDisplay(text))
-    view.add_item(container)
-    return view
-
-
-def _loading_view(text: str) -> discord.ui.LayoutView:
-    return _view(f"⏳ {text}", discord.Colour.light_grey())
-
-
-def _error_view(text: str) -> discord.ui.LayoutView:
-    return _view(f"❌ {text}", discord.Colour.red())
 
 
 # ── 유틸 ──
@@ -60,7 +39,7 @@ class DashboardView(discord.ui.LayoutView):
             container = discord.ui.Container(accent_colour=discord.Colour.blurple())
             container.add_item(
                 discord.ui.TextDisplay(
-                    "# 🏪 루미아 상점\n"
+                    "# 🏪 루미아 교환소\n"
                     "-# 루미아 캠퍼스"
                 )
             )
@@ -397,3 +376,4 @@ async def setup(bot: commands.Bot) -> None:
     cog = _DashboardManager(bot)
     await bot.add_cog(cog)
     await cog.ensure_dashboard()
+
