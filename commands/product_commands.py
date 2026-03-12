@@ -27,8 +27,8 @@ class ProductSystem(commands.Cog):
     async def add_product_cmd(self, interaction: discord.Interaction, name: str, price: int , image_url: str = None):
         await interaction.response.defer(ephemeral=True)
         try:
-          result = await add_product(name, price , interaction.user.display_name , image_url)
-          await interaction.followup.send(f"상품 {name}이(가) {price}원으로 추가되었습니다.", ephemeral=True)
+            result = await add_product(name, price , interaction.user.display_name , image_url)
+            await interaction.followup.send(f"상품 {name}이(가) {price}원으로 추가되었습니다.", ephemeral=True)
         except Exception as e:
             if "23505" in str(e):
                 await interaction.followup.send(f"⚠️ 이미 등록된 상품명입니다: '{name}'", ephemeral=True)
