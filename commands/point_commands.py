@@ -52,11 +52,14 @@ class PointSystem(commands.Cog):
         if not interaction.user.guild_permissions.administrator:
             await interaction.followup.send("이 명령어는 관리자만 사용할 수 있습니다.", ephemeral=True)
             return
-        result = await minus_point(member.id, points)
-        if result is None:
-            await interaction.followup.send("사용자가 존재하지 않습니다.", ephemeral=True)
-            return
-        await interaction.followup.send(f"{member.display_name}에게 {points}점이 차감되었습니다.", ephemeral=True)
+        try:
+            await minus_point(member.id, points)
+            await interaction.followup.send(f"{member.display_name}에게 {points}점이 차감되었습니다.", ephemeral=True)
+        except Exception as e:
+            if "23514" in str(e):
+                await interaction.followup.send(f"⚠️ {member.display_name}님의 포인트가 부족합니다.", ephemeral=True)
+            else:
+                await interaction.followup.send("사용자가 존재하지 않습니다.", ephemeral=True)
 
     @app_commands.command(name="포인트_업데이트", description="포인트를 업데이트합니다.")
     @app_commands.describe(member="유저를 선택하세요.", points="업데이트할 포인트 양")

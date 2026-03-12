@@ -16,13 +16,13 @@ async def plus_point(user_id, value):
 # return point : int
 async def minus_point(user_id , value):
     await supabase.rpc("minus_point", {"u_id": user_id, "amount": value}).execute()
-    return fetch_point(user_id)
+    return await fetch_point(user_id)
 
 # 포인트 업데이트
 # return point : int
 async def update_point(user_id, value):
     await supabase.rpc("update_point", {"u_id": user_id, "new_value": value}).execute()
-    return fetch_point(user_id)
+    return await fetch_point(user_id)
 
 
 if __name__ == "__main__":
