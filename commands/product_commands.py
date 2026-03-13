@@ -2,6 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from repository.product_repository import *
+from commands.exchange import refresh_dashboard
 from utils.views import error_view, success_view, warn_view, info_view
 
 
@@ -40,6 +41,7 @@ class ProductSystem(commands.Cog):
                 view=success_view(f"상품 **{name}**이(가) **{price}P**로 추가되었어요."),
                 ephemeral=True,
             )
+            await refresh_dashboard(self.bot)
         except Exception as e:
             if "23505" in str(e):
                 await interaction.followup.send(
@@ -64,6 +66,7 @@ class ProductSystem(commands.Cog):
         await interaction.followup.send(
             view=success_view(f"상품 **{result}**이(가) 삭제되었어요."), ephemeral=True
         )
+        await refresh_dashboard(self.bot)
 
     @app_commands.command(name="상품_구매", description="상품을 구매합니다.")
     @app_commands.describe(name="어떤 상품을 구매할지 입력하세요.")
@@ -103,6 +106,7 @@ class ProductSystem(commands.Cog):
                 ),
                 ephemeral=True,
             )
+            await refresh_dashboard(self.bot)
 
     @app_commands.command(name="쿠폰_추출", description="상품의 쿠폰 코드를 추출합니다.")
     @app_commands.describe(name="어떤 상품의 쿠폰 코드를 추출할지 입력하세요.")
@@ -124,6 +128,7 @@ class ProductSystem(commands.Cog):
             await interaction.followup.send(
                 view=success_view(f"쿠폰 코드: `{result}`"), ephemeral=True
             )
+            await refresh_dashboard(self.bot)
 
 
 async def setup(bot: commands.Bot) -> None:
