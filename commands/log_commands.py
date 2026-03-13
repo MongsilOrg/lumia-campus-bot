@@ -1,11 +1,9 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-from repository.log_repository import get_log
-from view.pagination_view import PaginationView, build_table
+from repository.log_repository import *
+from view.pagination_view import *
 from utils.views import error_view
-
-
 class LogSystem(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
@@ -22,7 +20,7 @@ class LogSystem(commands.Cog):
             )
             return
         total_pages = (total_count + page_size - 1) // page_size
-        table_text = build_table(result, 1, page_size)
+        table_text = basic_build_table(result, 1, page_size)
         pview = PaginationView(interaction.user.id, 1, total_pages, table_text)
         await interaction.followup.send(view=pview, ephemeral=True)
 
@@ -40,10 +38,27 @@ class LogSystem(commands.Cog):
             )
             return
         total_pages = (total_count + page_size - 1) // page_size
-        table_text = build_table(result, 1, page_size)
+        table_text = basic_build_table(result, 1, page_size)
         pview = PaginationView(member.id, 1, total_pages, table_text)
         await interaction.followup.send(view=pview, ephemeral=True)
 
+    @app_commands.command(name="상품별_이력조회", description="상품별 이력을 확인합니다.")
+    @app_commands.describe(name="이력을 조회할 상품을 선택하세요.")
+    @app_commands.default_permissions(administrator=True)
+    async def get_product_log_cmd(self, interaction: discord.Interaction, name: str):
+        await interaction.response.defer(ephemeral=True)
+        page_size = 20
+        result, total_count = await get_product_log(name, page=1, page_size=page_size)
+        if not result:
+            await interaction.followup.send(
+                view=error_view(f"**{name}**의 구매 이력이 존재하지 않아요"),
+                ephemeral=True,
+            )
+            return
+        total_pages = (total_count + page_size - 1) // page_size
+        table_text = product_build_table(result, 1, page_size)
+        pview = ProductPaginationView(name , 1, total_pages, table_text)
+        await interaction.followup.send(view=pview, ephemeral=True)
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(LogSystem(bot))
