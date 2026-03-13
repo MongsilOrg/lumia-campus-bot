@@ -94,6 +94,8 @@ class ProductSystem(commands.Cog):
                 "포인트가 부족해요.",
             "재고가 없습니다 관리자에게 문의 주세요":
                 "재고가 없어요.\n관리자에게 문의해 주세요.",
+            "이미 구매하신 상품입니다.":
+                "이미 구매하신 상품입니다."
         }
         if result[0] in error_map:
             await interaction.followup.send(
