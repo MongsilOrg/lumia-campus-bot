@@ -9,20 +9,20 @@ async def fetch_point(user_id):
 # 포인트 증가
 # return point : int
 async def plus_point(user_id, value):
-    await supabase.rpc("plus_point", {"u_id": user_id, "amount": value}).execute()
-    return await fetch_point(user_id)
+    point = await supabase.rpc("plus_point", {"u_id": user_id, "amount": value}).execute()
+    return point.data
 
 # 포인트 감소
 # return point : int
 async def minus_point(user_id , value):
-    await supabase.rpc("minus_point", {"u_id": user_id, "amount": value}).execute()
-    return await fetch_point(user_id)
+    point = await supabase.rpc("minus_point", {"u_id": user_id, "amount": value}).execute()
+    return point.data
 
 # 포인트 업데이트
 # return point : int
 async def update_point(user_id, value):
-    await supabase.rpc("update_point", {"u_id": user_id, "new_value": value}).execute()
-    return await fetch_point(user_id)
+    point = await supabase.rpc("update_point", {"u_id": user_id, "new_value": value}).execute()
+    return point.data
 
 
 if __name__ == "__main__":
