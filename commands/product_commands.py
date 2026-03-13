@@ -113,6 +113,12 @@ class ProductSystem(commands.Cog):
     @app_commands.default_permissions(administrator=True)
     async def extract_coupon_code_cmd(self, interaction: discord.Interaction, name: str):
         await interaction.response.defer(ephemeral=True)
+        products = await fetch_product()
+        if not any(p[0] == name for p in products):
+            await interaction.followup.send(
+                view=error_view(f"존재하지 않는 상품이에요: **{name}**"), ephemeral=True
+            )
+            return
         try:
             result = await extract_coupon_code(interaction.user.id, name)
         except Exception:
