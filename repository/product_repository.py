@@ -1,4 +1,18 @@
+from collections import Counter
+
 from service.superbase import supabase
+
+
+# 상품별 재고(미할당 쿠폰 수) 조회
+# return {"상품명": 재고수, ...}
+async def fetch_product_stock():
+    response = (
+        await supabase.table("store")
+        .select("store_name")
+        .is_("user_id", "null")
+        .execute()
+    )
+    return dict(Counter(row["store_name"] for row in response.data))
 
 # 상품 전체 조회
 # return [product_name : str]
