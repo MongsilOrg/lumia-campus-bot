@@ -48,8 +48,12 @@ class DashboardView(discord.ui.LayoutView):
             container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small, visible=True))
             for name, cost, image in products:
                 qty = stock.get(name, 0)
-                stock_text = f"-# ⚠️ 품절" if qty == 0 else f"-# 재고 {qty}개"
-                text = discord.ui.TextDisplay(f"**{name}** — {cost}P\n{stock_text}")
+                if qty == 0:
+                    stock_text = "-# ⚠️ 품절"
+                    text = discord.ui.TextDisplay(f"~~**{name}**~~ — ~~{cost}P~~\n{stock_text}")
+                else:
+                    stock_text = f"-# 재고 {qty}개"
+                    text = discord.ui.TextDisplay(f"**{name}** — {cost}P\n{stock_text}")
                 if image:
                     container.add_item(
                         discord.ui.Section(
@@ -161,8 +165,9 @@ async def _handle_buy_start(interaction: discord.Interaction) -> None:
         return
 
     try:
-        products = await fetch_product()
-        points = await fetch_point(member.id)
+        products, stock, points = await asyncio.gather(
+            fetch_product(), fetch_product_stock(), fetch_point(member.id)
+        )
     except Exception:
         log.exception("[구매] 데이터 조회 실패")
         await interaction.followup.send(
@@ -185,7 +190,7 @@ async def _handle_buy_start(interaction: discord.Interaction) -> None:
         )
         return
 
-    select_view = _make_product_select_view(member, products, points)
+    select_view = _make_product_select_view(member, products, points, stock)
     await interaction.followup.send(view=select_view, ephemeral=True)
 
 
@@ -193,7 +198,7 @@ async def _handle_buy_start(interaction: discord.Interaction) -> None:
 
 
 def _make_product_select_view(
-    member: discord.Member, products: list, points: int
+    member: discord.Member, products: list, points: int, stock: dict
 ) -> discord.ui.LayoutView:
     view = discord.ui.LayoutView(timeout=180)
     member_id = member.id
@@ -207,25 +212,26 @@ def _make_product_select_view(
             f"보유 포인트: **{points}P**"
         )
     )
-    view.add_item(container)
 
     row = discord.ui.ActionRow()
-    select = discord.ui.Select(
-        placeholder="상품을 선택해 주세요",
-        options=[
-            discord.SelectOption(
-                label=name,
-                description=f"{cost}P",
-                value=name,
-            )
-            for name, cost, _image in products
-        ],
-    )
+    options = []
+    for name, cost, _image in products:
+        qty = stock.get(name, 0)
+        desc = f"{cost}P · 품절" if qty == 0 else f"{cost}P · 재고 {qty}개"
+        options.append(discord.SelectOption(label=name, description=desc, value=name))
+    select = discord.ui.Select(placeholder="상품을 선택해 주세요", options=options)
 
     async def on_select(select_interaction: discord.Interaction):
         if select_interaction.user.id != member_id:
             return
         selected_name = select.values[0]
+        selected_qty = stock.get(selected_name, 0)
+        if selected_qty == 0:
+            await select_interaction.response.send_message(
+                view=_error_view("품절된 상품이에요. 다른 상품을 선택해 주세요."),
+                ephemeral=True,
+            )
+            return
         selected_cost = next(
             cost for name, cost, _img in products if name == selected_name
         )
@@ -240,7 +246,8 @@ def _make_product_select_view(
 
     select.callback = on_select
     row.add_item(select)
-    view.add_item(row)
+    container.add_item(row)
+    view.add_item(container)
 
     return view
 
@@ -257,21 +264,23 @@ def _make_buy_confirm_view(
 ) -> discord.ui.LayoutView:
     view = discord.ui.LayoutView(timeout=180)
     member_id = member.id
+    insufficient = points < product_cost
+
+    text = (
+        f"## 🛒 구매 확인\n\n"
+        f"**{nickname}**님, **{product_name}**을(를) 구매할까요?\n\n"
+        f"상품 가격: **{product_cost}P**\n"
+        f"보유 포인트: **{points}P**"
+    )
+    if insufficient:
+        text += "\n-# ⚠️ 포인트가 부족해요"
 
     container = discord.ui.Container(accent_colour=discord.Colour.blurple())
-    container.add_item(
-        discord.ui.TextDisplay(
-            f"## 🛒 구매 확인\n\n"
-            f"**{nickname}**님, **{product_name}**을(를) 구매할까요?\n\n"
-            f"상품 가격: **{product_cost}P**\n"
-            f"보유 포인트: **{points}P**"
-        )
-    )
-    view.add_item(container)
+    container.add_item(discord.ui.TextDisplay(text))
 
     row = discord.ui.ActionRow()
     confirm_btn = discord.ui.Button(
-        label="구매하기", style=discord.ButtonStyle.success
+        label="구매하기", style=discord.ButtonStyle.success, disabled=insufficient
     )
     cancel_btn = discord.ui.Button(
         label="취소", style=discord.ButtonStyle.secondary
@@ -308,7 +317,8 @@ def _make_buy_confirm_view(
     cancel_btn.callback = on_cancel
     row.add_item(confirm_btn)
     row.add_item(cancel_btn)
-    view.add_item(row)
+    container.add_item(row)
+    view.add_item(container)
 
     return view
 
