@@ -23,7 +23,6 @@ class PaginationView(discord.ui.LayoutView):
             f"```\n{table_text}```\n"
             f"-# 페이지 {current_page} / {total_pages}"
         ))
-        self.add_item(container)
 
         row = discord.ui.ActionRow()
         prev_btn = discord.ui.Button(
@@ -51,7 +50,8 @@ class PaginationView(discord.ui.LayoutView):
         next_btn.callback = on_next
         row.add_item(prev_btn)
         row.add_item(next_btn)
-        self.add_item(row)
+        container.add_item(row)
+        self.add_item(container)
 
     async def _update(self, interaction: discord.Interaction):
         result, _ = await get_log(self.user_id, page=self.page)
