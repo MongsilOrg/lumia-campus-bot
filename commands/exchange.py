@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 
 import discord
@@ -8,7 +9,7 @@ from discord.ext import commands
 from utils.config import get_config
 from utils.views import view as _view, loading_view as _loading_view, error_view as _error_view
 from repository.point_repository import fetch_point
-from repository.product_repository import fetch_product, buy_product
+from repository.product_repository import fetch_product, fetch_product_stock, buy_product
 
 log = logging.getLogger(__name__)
 
@@ -30,9 +31,10 @@ def _has_required_role(member: discord.Member) -> bool:
 
 
 class DashboardView(discord.ui.LayoutView):
-    def __init__(self, products=None):
+    def __init__(self, products=None, stock=None):
         super().__init__(timeout=None)
         if products is not None:
+            stock = stock or {}
             existing = list(self.children)
             self.clear_items()
 
@@ -43,8 +45,11 @@ class DashboardView(discord.ui.LayoutView):
                     "-# 루미아 캠퍼스"
                 )
             )
+            container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small, visible=True))
             for name, cost, image in products:
-                text = discord.ui.TextDisplay(f"**{name}** — {cost}P")
+                qty = stock.get(name, 0)
+                stock_text = f"-# ⚠️ 품절" if qty == 0 else f"-# 재고 {qty}개"
+                text = discord.ui.TextDisplay(f"**{name}** — {cost}P\n{stock_text}")
                 if image:
                     container.add_item(
                         discord.ui.Section(
@@ -54,9 +59,10 @@ class DashboardView(discord.ui.LayoutView):
                     )
                 else:
                     container.add_item(text)
+            container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small, visible=True))
             container.add_item(
                 discord.ui.TextDisplay(
-                    "\n아래 버튼을 눌러 포인트 조회 또는 상품 구매를 시작해 보세요."
+                    "아래 버튼을 눌러 포인트 조회 또는 상품 구매를 시작해 보세요."
                 )
             )
             self.add_item(container)
@@ -353,6 +359,17 @@ async def _handle_buy_confirm(
         )
     )
 
+    await refresh_dashboard(interaction.client)
+
+
+# ── 대시보드 갱신 헬퍼 (다른 Cog에서 import 가능) ──
+
+
+async def refresh_dashboard(bot: commands.Bot) -> None:
+    cog = bot.get_cog("_DashboardManager")
+    if cog is not None:
+        await cog.ensure_dashboard()
+
 
 # ── 대시보드 자동 전송 ──
 
@@ -369,12 +386,14 @@ class _DashboardManager(commands.Cog):
             return
 
         try:
-            products = await fetch_product()
+            products, stock = await asyncio.gather(
+                fetch_product(), fetch_product_stock()
+            )
         except Exception:
-            log.exception("상품 목록 조회 실패")
+            log.exception("상품 목록/재고 조회 실패")
             return
 
-        view = DashboardView(products=products)
+        view = DashboardView(products=products, stock=stock)
 
         async for msg in channel.history(limit=50):
             if msg.author == self.bot.user:
