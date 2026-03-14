@@ -51,7 +51,7 @@ class LogSystem(commands.Cog):
         result, total_count = await get_product_log(name, page=1, page_size=page_size)
         if not result:
             await interaction.followup.send(
-                view=error_view(f"**{name}**의 구매 이력이 존재하지 않아요"),
+                view=error_view(f"**{name}**의 구매 이력이 없어요."),
                 ephemeral=True,
             )
             return

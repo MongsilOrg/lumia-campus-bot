@@ -115,7 +115,7 @@ async def _handle_point_check(interaction: discord.Interaction) -> None:
     except Exception:
         log.exception("[포인트 조회] 데이터 조회 실패")
         await interaction.followup.send(
-            view=_error_view("포인트 조회 중 오류가 발생했어요."), ephemeral=True
+            view=_error_view("포인트 조회 중 오류가 발생했어요.\n다시 시도해 주세요."), ephemeral=True
         )
         return
 
@@ -171,7 +171,7 @@ async def _handle_buy_start(interaction: discord.Interaction) -> None:
     except Exception:
         log.exception("[구매] 데이터 조회 실패")
         await interaction.followup.send(
-            view=_error_view("데이터 조회 중 오류가 발생했어요."), ephemeral=True
+            view=_error_view("상품 및 포인트 조회 중 오류가 발생했어요.\n다시 시도해 주세요."), ephemeral=True
         )
         return
 
