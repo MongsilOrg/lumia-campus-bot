@@ -100,8 +100,11 @@ class DashboardView(discord.ui.LayoutView):
 
 
 async def _handle_point_check(interaction: discord.Interaction) -> None:
-    if not interaction.response.is_done():
-        await interaction.response.defer(ephemeral=True)
+    try:
+        if not interaction.response.is_done():
+            await interaction.response.defer(ephemeral=True)
+    except discord.NotFound:
+        return
 
     member = interaction.user
     if not isinstance(member, discord.Member):
@@ -144,8 +147,11 @@ async def _handle_point_check(interaction: discord.Interaction) -> None:
 
 
 async def _handle_buy_start(interaction: discord.Interaction) -> None:
-    if not interaction.response.is_done():
-        await interaction.response.defer(ephemeral=True)
+    try:
+        if not interaction.response.is_done():
+            await interaction.response.defer(ephemeral=True)
+    except discord.NotFound:
+        return
 
     member = interaction.user
     if not isinstance(member, discord.Member):
