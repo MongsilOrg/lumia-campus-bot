@@ -9,7 +9,7 @@ from discord.ext import commands
 from utils.config import get_config
 from utils.views import view as _view, loading_view as _loading_view, error_view as _error_view
 from repository.point_repository import fetch_point
-from repository.product_repository import fetch_product, fetch_product_stock, buy_product
+from repository.product_repository import fetch_product, fetch_product_stock, buy_product, fetch_user_coupon
 
 log = logging.getLogger(__name__)
 
@@ -356,6 +356,19 @@ async def _handle_buy_confirm(
         "재고가 없습니다 관리자에게 문의 주세요":
             "재고가 없어요.\n관리자에게 문의해 주세요.",
     }
+
+    if result is not None and result[0] == "이미 구매하신 상품입니다.":
+        coupon_code = await fetch_user_coupon(member.id, product_name)
+        await interaction.edit_original_response(
+            view=_view(
+                f"## 🎟️ 기존 쿠폰 안내\n\n"
+                f"**{nickname}**님은 이미 **{product_name}**을(를) 구매했어요.\n"
+                f"# {coupon_code}\n\n"
+                f"잔여 포인트: **{result[1]}P**",
+                discord.Colour.blue(),
+            )
+        )
+        return
 
     if result is None or result[0] in error_map:
         error_msg = error_map.get(result[0], "알 수 없는 오류가 발생했어요.") if result else "알 수 없는 오류가 발생했어요."
