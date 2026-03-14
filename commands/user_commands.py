@@ -30,7 +30,10 @@ class UserSystem(commands.Cog):
             result = await add_user(member.id, member.display_name, email, point)
             if result is None:
                 await interaction.followup.send(
-                    view=error_view("유저 등록에 실패했어요."), ephemeral=True
+                    view=error_view(
+                        f"**{member.display_name}**님의 등록에 실패했어요.\n다시 시도해 주세요."
+                    ),
+                    ephemeral=True,
                 )
                 return
             await interaction.followup.send(
@@ -45,7 +48,10 @@ class UserSystem(commands.Cog):
                 )
             else:
                 await interaction.followup.send(
-                    view=error_view("유저 등록 중 오류가 발생했어요."), ephemeral=True
+                    view=error_view(
+                        f"**{member.display_name}**님의 등록 중 오류가 발생했어요.\n다시 시도해 주세요."
+                    ),
+                    ephemeral=True,
                 )
 
     @app_commands.command(name="유저_정보삭제", description="유저 정보를 삭제합니다.")
@@ -57,16 +63,25 @@ class UserSystem(commands.Cog):
             result = await delete_user(member.id)
             if result is None:
                 await interaction.followup.send(
-                    view=error_view("유저 삭제에 실패했어요."), ephemeral=True
+                    view=error_view(f"등록되지 않은 유저예요: **{member.display_name}**"),
+                    ephemeral=True,
                 )
                 return
             await interaction.followup.send(
                 view=success_view(f"**{result}**님이 삭제되었어요."), ephemeral=True
             )
-        except Exception:
-            await interaction.followup.send(
-                view=error_view("유저 삭제 중 오류가 발생했어요."), ephemeral=True
-            )
+        except Exception as e:
+            if "23503" in str(e):
+                await interaction.followup.send(
+                    view=warn_view("구매 이력이 있는 유저는 삭제할 수 없어요."), ephemeral=True
+                )
+            else:
+                await interaction.followup.send(
+                    view=error_view(
+                        f"**{member.display_name}**님의 삭제 중 오류가 발생했어요.\n다시 시도해 주세요."
+                    ),
+                    ephemeral=True,
+                )
 
 
 async def setup(bot: commands.Bot) -> None:
