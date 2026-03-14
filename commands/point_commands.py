@@ -37,7 +37,8 @@ class PointSystem(commands.Cog):
         result = await fetch_point(member.id)
         if result is None:
             await interaction.followup.send(
-                view=error_view("등록되지 않은 사용자예요."), ephemeral=True
+                view=error_view(f"등록되지 않은 사용자예요: **{member.display_name}**"),
+                ephemeral=True,
             )
             return
         await interaction.followup.send(
@@ -63,12 +64,16 @@ class PointSystem(commands.Cog):
             result = await plus_point(member.id, points)
         except Exception:
             await interaction.followup.send(
-                view=error_view("포인트 추가 중 오류가 발생했어요."), ephemeral=True
+                view=error_view(
+                    f"**{member.display_name}**님의 포인트 추가 중 오류가 발생했어요.\n다시 시도해 주세요."
+                ),
+                ephemeral=True,
             )
             return
         if result is None:
             await interaction.followup.send(
-                view=error_view("등록되지 않은 사용자예요."), ephemeral=True
+                view=error_view(f"등록되지 않은 사용자예요: **{member.display_name}**"),
+                ephemeral=True,
             )
             return
         await interaction.followup.send(
@@ -106,7 +111,10 @@ class PointSystem(commands.Cog):
                 )
             else:
                 await interaction.followup.send(
-                    view=error_view("포인트 차감 중 오류가 발생했어요."), ephemeral=True
+                    view=error_view(
+                        f"**{member.display_name}**님의 포인트 차감 중 오류가 발생했어요.\n다시 시도해 주세요."
+                    ),
+                    ephemeral=True,
                 )
 
     @app_commands.command(name="포인트_업데이트", description="포인트를 업데이트합니다.")
@@ -123,13 +131,17 @@ class PointSystem(commands.Cog):
             prev = await fetch_point(member.id)
             if prev is None:
                 await interaction.followup.send(
-                    view=error_view("등록되지 않은 사용자예요."), ephemeral=True
+                    view=error_view(f"등록되지 않은 사용자예요: **{member.display_name}**"),
+                    ephemeral=True,
                 )
                 return
             result = await update_point(member.id, points)
             if result is None:
                 await interaction.followup.send(
-                    view=error_view("포인트 업데이트에 실패했어요."), ephemeral=True
+                    view=error_view(
+                        f"**{member.display_name}**님의 포인트 업데이트에 실패했어요.\n다시 시도해 주세요."
+                    ),
+                    ephemeral=True,
                 )
                 return
             await interaction.followup.send(
@@ -141,7 +153,10 @@ class PointSystem(commands.Cog):
             )
         except Exception:
             await interaction.followup.send(
-                view=error_view("포인트 업데이트 중 오류가 발생했어요."), ephemeral=True
+                view=error_view(
+                    f"**{member.display_name}**님의 포인트 업데이트 중 오류가 발생했어요.\n다시 시도해 주세요."
+                ),
+                ephemeral=True,
             )
 
 
