@@ -52,7 +52,8 @@ class ProductSystem(commands.Cog):
                 )
             else:
                 await interaction.followup.send(
-                    view=error_view("상품 추가 중 오류가 발생했어요."), ephemeral=True
+                    view=error_view(f"상품 **{name}** 추가 중 오류가 발생했어요.\n다시 시도해 주세요."),
+                    ephemeral=True,
                 )
 
     @app_commands.command(name="상품_삭제", description="상품을 삭제합니다.")
@@ -63,7 +64,7 @@ class ProductSystem(commands.Cog):
         result = await delete_product(name)
         if result is None:
             await interaction.followup.send(
-                view=error_view("상품이 존재하지 않아요."), ephemeral=True
+                view=error_view(f"존재하지 않는 상품이에요: **{name}**"), ephemeral=True
             )
             return
         await interaction.followup.send(
@@ -79,12 +80,14 @@ class ProductSystem(commands.Cog):
             result = await buy_product(interaction.user.id, name)
         except Exception:
             await interaction.followup.send(
-                view=error_view("구매 처리 중 오류가 발생했어요."), ephemeral=True
+                view=error_view(f"**{name}** 구매 처리 중 오류가 발생했어요.\n다시 시도해 주세요."),
+                ephemeral=True,
             )
             return
         if result is None:
             await interaction.followup.send(
-                view=error_view("구매 처리 중 오류가 발생했어요."), ephemeral=True
+                view=error_view(f"**{name}** 구매 처리 중 알 수 없는 오류가 발생했어요.\n다시 시도해 주세요."),
+                ephemeral=True,
             )
             return
         error_map = {
@@ -95,7 +98,7 @@ class ProductSystem(commands.Cog):
             "재고가 없습니다 관리자에게 문의 주세요":
                 "재고가 없어요.\n관리자에게 문의해 주세요.",
             "이미 구매하신 상품입니다.":
-                "이미 구매하신 상품입니다."
+                "이미 구매한 상품이에요."
         }
         if result[0] in error_map:
             await interaction.followup.send(
@@ -128,12 +131,13 @@ class ProductSystem(commands.Cog):
             result = await extract_coupon_code(interaction.user.id, name)
         except Exception:
             await interaction.followup.send(
-                view=error_view("쿠폰 추출 중 오류가 발생했어요."), ephemeral=True
+                view=error_view(f"**{name}** 쿠폰 추출 중 오류가 발생했어요.\n다시 시도해 주세요."),
+                ephemeral=True,
             )
             return
         if result is None or result == "재고가 없습니다":
             await interaction.followup.send(
-                view=error_view("재고가 없어요."), ephemeral=True
+                view=error_view(f"**{name}**의 재고가 없어요."), ephemeral=True
             )
         else:
             await interaction.followup.send(
