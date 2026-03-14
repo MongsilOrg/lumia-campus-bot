@@ -102,8 +102,8 @@ class ProductSystem(commands.Cog):
             coupon_code = await fetch_user_coupon(interaction.user.id, name)
             await interaction.followup.send(
                 view=info_view(
-                    f"## 🎟️ 기존 쿠폰 안내\n\n"
-                    f"이미 **{name}**을(를) 구매했어요.\n"
+                    f"## 🎟️ 쿠폰 확인\n\n"
+                    f"이미 구매한 **{name}** 쿠폰이에요.\n"
                     f"쿠폰: `{coupon_code}`\n"
                     f"잔여 포인트: **{result[1]}P**"
                 ),

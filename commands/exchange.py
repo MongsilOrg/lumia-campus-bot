@@ -361,8 +361,8 @@ async def _handle_buy_confirm(
         coupon_code = await fetch_user_coupon(member.id, product_name)
         await interaction.edit_original_response(
             view=_view(
-                f"## 🎟️ 기존 쿠폰 안내\n\n"
-                f"**{nickname}**님은 이미 **{product_name}**을(를) 구매했어요.\n"
+                f"## 🎟️ 쿠폰 확인\n\n"
+                f"**{nickname}**님, 이미 구매한 **{product_name}** 쿠폰이에요.\n"
                 f"# {coupon_code}\n\n"
                 f"잔여 포인트: **{result[1]}P**",
                 discord.Colour.blue(),
