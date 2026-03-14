@@ -68,6 +68,19 @@ async def extract_coupon_code(user_id , product_name):
     data = res.data
     return data if res else None
 
+# 유저가 이미 구매한 쿠폰 코드 조회
+# return coupon_code : str | None
+async def fetch_user_coupon(user_id, product_name):
+    response = (
+        await supabase.table("store")
+        .select("store_product")
+        .eq("user_id", user_id)
+        .eq("store_name", product_name)
+        .execute()
+    )
+    return response.data[0]['store_product'] if response.data else None
+
+
 async def add_coupon_code(product_name , coupon_code):
     data = {
         "store_name" : product_name,
