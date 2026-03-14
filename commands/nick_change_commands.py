@@ -20,9 +20,19 @@ class NickChangeSystem(commands.Cog):
                 view=success_view(f"**{member.display_name}**님의 닉네임이 **{new_nick}**(으)로 변경되었어요."),
                 ephemeral=True,
             )
-        except Exception as e:
+        except discord.Forbidden:
             await interaction.followup.send(
-                view=error_view("닉네임 변경 중 오류가 발생했어요."), ephemeral=True
+                view=error_view(
+                    f"**{member.display_name}**님의 닉네임 변경 권한이 없어요.\n봇의 역할 순서를 확인해 주세요."
+                ),
+                ephemeral=True,
+            )
+        except Exception:
+            await interaction.followup.send(
+                view=error_view(
+                    f"**{member.display_name}**님의 닉네임 변경 중 오류가 발생했어요.\n다시 시도해 주세요."
+                ),
+                ephemeral=True,
             )
 
 async def setup(bot: commands.Bot) -> None:
