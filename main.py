@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import sentry_sdk, os
+sentry_sdk.init(dsn=os.getenv("SENTRY_DSN", ""), traces_sample_rate=0.1, environment="production")
+
 import logging
 from service.superbase import init_supabase
 import discord
