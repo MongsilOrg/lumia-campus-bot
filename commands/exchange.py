@@ -10,6 +10,8 @@ from utils.config import get_config
 from utils.views import view as _view, loading_view as _loading_view, error_view as _error_view
 from repository.point_repository import fetch_point
 from repository.product_repository import fetch_product, fetch_product_stock, buy_product, fetch_user_coupon
+from repository.log_repository import get_log
+from view.pagination_view import PaginationView, basic_build_table
 
 log = logging.getLogger(__name__)
 
@@ -95,6 +97,16 @@ class DashboardView(discord.ui.LayoutView):
     ):
         await _handle_buy_start(interaction)
 
+    @row.button(
+        label="🎟️ 구매내역",
+        custom_id="dashboard:my_purchases",
+        style=discord.ButtonStyle.secondary,
+    )
+    async def my_purchases_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        await _handle_my_purchases(interaction)
+
 
 # ── 포인트 조회 ──
 
@@ -141,6 +153,44 @@ async def _handle_point_check(interaction: discord.Interaction) -> None:
         ),
         ephemeral=True,
     )
+
+
+# ── 구매내역 조회 ──
+
+
+async def _handle_my_purchases(interaction: discord.Interaction) -> None:
+    try:
+        if not interaction.response.is_done():
+            await interaction.response.defer(ephemeral=True)
+    except discord.NotFound:
+        return
+
+    member = interaction.user
+    if not isinstance(member, discord.Member):
+        await interaction.followup.send(
+            view=_error_view("서버 멤버 정보를 확인할 수 없어요."), ephemeral=True
+        )
+        return
+
+    try:
+        result, count = await get_log(member.id)
+    except Exception:
+        log.exception("[구매내역] 데이터 조회 실패")
+        await interaction.followup.send(
+            view=_error_view("구매내역 조회 중 오류가 발생했어요.\n다시 시도해 주세요."), ephemeral=True
+        )
+        return
+
+    if not result:
+        await interaction.followup.send(
+            view=_error_view("구매내역이 없어요."), ephemeral=True
+        )
+        return
+
+    total_pages = max(1, (count + 19) // 20)
+    table_text = basic_build_table(result, 1)
+    pagination_view = PaginationView(member.id, 1, total_pages, table_text)
+    await interaction.followup.send(view=pagination_view, ephemeral=True)
 
 
 # ── 상품 구매 시작 ──
