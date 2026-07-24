@@ -214,7 +214,7 @@ async def _handle_buy_start(interaction: discord.Interaction) -> None:
         await interaction.followup.send(
             view=_error_view(
                 "구매 권한이 없어요.\n"
-                "학생회·학부생·재학생·신입생 역할이 필요해요."
+                "학생회, 학부생, 재학생, 신입생 역할이 필요해요."
             ),
             ephemeral=True,
         )
