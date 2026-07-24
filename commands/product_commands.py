@@ -2,7 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from repository.product_repository import *
-from commands.exchange import refresh_dashboard
+from commands.exchange import refresh_dashboard, _has_required_role
 from utils.views import error_view, success_view, warn_view, info_view
 
 
@@ -76,6 +76,16 @@ class ProductSystem(commands.Cog):
     @app_commands.describe(name="어떤 상품을 구매할지 입력하세요.")
     async def buy_product_cmd(self, interaction: discord.Interaction, name: str):
         await interaction.response.defer(ephemeral=True)
+        member = interaction.user
+        if not isinstance(member, discord.Member) or not _has_required_role(member):
+            await interaction.followup.send(
+                view=error_view(
+                    "구매 권한이 없어요.\n"
+                    "학생회, 학부생, 재학생, 신입생 역할이 필요해요."
+                ),
+                ephemeral=True,
+            )
+            return
         try:
             result = await buy_product(interaction.user.id, name)
         except Exception:
