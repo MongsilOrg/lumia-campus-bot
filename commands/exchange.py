@@ -52,10 +52,10 @@ class DashboardView(discord.ui.LayoutView):
                 qty = stock.get(name, 0)
                 if qty == 0:
                     stock_text = "-# ⚠️ 품절"
-                    text = discord.ui.TextDisplay(f"~~**{name}**~~ — ~~{cost}P~~\n{stock_text}")
+                    text = discord.ui.TextDisplay(f"~~**{name}**~~ ~~{cost}P~~\n{stock_text}")
                 else:
                     stock_text = f"-# 재고 {qty}개"
-                    text = discord.ui.TextDisplay(f"**{name}** — {cost}P\n{stock_text}")
+                    text = discord.ui.TextDisplay(f"**{name}** {cost}P\n{stock_text}")
                 if image:
                     container.add_item(
                         discord.ui.Section(
@@ -273,7 +273,7 @@ def _make_product_select_view(
     options = []
     for name, cost, _image in products:
         qty = stock.get(name, 0)
-        desc = f"{cost}P · 품절" if qty == 0 else f"{cost}P · 재고 {qty}개"
+        desc = f"{cost}P, 품절" if qty == 0 else f"{cost}P, 재고 {qty}개"
         options.append(discord.SelectOption(label=name, description=desc, value=name))
     select = discord.ui.Select(placeholder="상품을 선택해 주세요", options=options)
 

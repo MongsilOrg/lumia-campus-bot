@@ -25,7 +25,7 @@ class ProductSystem(commands.Cog):
         for name, cost, _image in result:
             qty = stock.get(name, 0)
             stock_text = "품절" if qty == 0 else f"재고 {qty}개"
-            text += f"**{name}** — {cost}P · {stock_text}\n"
+            text += f"**{name}** {cost}P ({stock_text})\n"
         await interaction.followup.send(view=info_view(text), ephemeral=True)
 
     @app_commands.command(name="상품_추가", description="상품을 추가합니다.")
