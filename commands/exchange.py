@@ -13,7 +13,7 @@ from repository.product_repository import fetch_product, fetch_product_stock, bu
 from repository.log_repository import get_log
 from view.pagination_view import PaginationView, basic_build_table
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("lumia-campus-bot.exchange")
 
 REQUIRED_ROLES = {"학생회", "학부생", "재학생", "신입생"}
 
