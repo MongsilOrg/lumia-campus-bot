@@ -420,14 +420,22 @@ async def _handle_buy_confirm(
         )
         return
 
-    if result is None or result[0] in error_map:
-        error_msg = error_map.get(result[0], "알 수 없는 오류가 발생했어요.") if result else "알 수 없는 오류가 발생했어요."
+    if result is None or result[0] is None:
+        log.error("[구매] 예상치 못한 RPC 결과: user=%s product=%s result=%r", member.id, product_name, result)
+        await interaction.edit_original_response(
+            view=_error_view("알 수 없는 오류가 발생했어요.")
+        )
+        return
+
+    if result[0] in error_map:
+        error_msg = error_map[result[0]]
         await interaction.edit_original_response(
             view=_error_view(error_msg)
         )
         return
 
     coupon_code, remaining_points = result
+    log.info("[구매] 완료: user=%s product=%s 잔여=%sP", member.id, product_name, remaining_points)
     await interaction.edit_original_response(
         view=_view(
             f"## ✅ 구매 완료\n\n"

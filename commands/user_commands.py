@@ -1,3 +1,4 @@
+import logging
 import re
 
 import discord
@@ -6,6 +7,7 @@ from discord.ext import commands
 from repository.user_repository import *
 from utils.views import error_view, success_view, warn_view
 
+log = logging.getLogger("lumia-campus-bot.users")
 
 class UserSystem(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -42,11 +44,13 @@ class UserSystem(commands.Cog):
             )
         except Exception as e:
             if "23505" in str(e):
+                log.warning("[유저 등록] 이미 등록됨: user=%s", member.id)
                 await interaction.followup.send(
                     view=warn_view(f"이미 등록된 유저예요: **{member.display_name}**"),
                     ephemeral=True,
                 )
             else:
+                log.exception("[유저 등록] 실패: user=%s", member.id)
                 await interaction.followup.send(
                     view=error_view(
                         f"**{member.display_name}**님의 등록 중 오류가 발생했어요.\n다시 시도해 주세요."
@@ -72,10 +76,12 @@ class UserSystem(commands.Cog):
             )
         except Exception as e:
             if "23503" in str(e):
+                log.warning("[유저 삭제] 구매 이력 있음: user=%s", member.id)
                 await interaction.followup.send(
                     view=warn_view("구매 이력이 있는 유저는 삭제할 수 없어요."), ephemeral=True
                 )
             else:
+                log.exception("[유저 삭제] 실패: user=%s", member.id)
                 await interaction.followup.send(
                     view=error_view(
                         f"**{member.display_name}**님의 삭제 중 오류가 발생했어요.\n다시 시도해 주세요."
