@@ -35,6 +35,7 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)-7s | %(name)s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
+logging.getLogger("httpx").setLevel(logging.WARNING)
 log = logging.getLogger("lumia-campus-bot")
 
 
@@ -50,19 +51,27 @@ def main() -> None:
     async def on_ready():
         log.info("봇 로그인: %s (ID: %s)", bot.user, bot.user.id)
 
-        if not hasattr(bot, "_setup_done"):
+        if not getattr(bot, "_setup_done", False):
+            try:
+                await init_supabase()
+                for ext in (
+                    "commands.exchange",
+                    "commands.point_commands",
+                    "commands.user_commands",
+                    "commands.log_commands",
+                    "commands.product_commands",
+                    "commands.nick_change_commands",
+                ):
+                    if ext not in bot.extensions:
+                        await bot.load_extension(ext)
+                # 기존 슬래시 커맨드 정리 (서버에서 제거)
+                guild = discord.Object(id=cfg.GUILD_ID)
+                bot.tree.copy_global_to(guild=guild)
+                await bot.tree.sync(guild=guild)
+            except Exception:
+                log.exception("초기 설정 실패, 다음 on_ready에서 다시 시도")
+                return
             bot._setup_done = True
-            await init_supabase()
-            await bot.load_extension("commands.exchange")
-            await bot.load_extension("commands.point_commands")
-            await bot.load_extension("commands.user_commands")
-            await bot.load_extension("commands.log_commands")
-            await bot.load_extension("commands.product_commands")
-            await bot.load_extension("commands.nick_change_commands")
-            # 기존 슬래시 커맨드 정리 (서버에서 제거)
-            guild = discord.Object(id=cfg.GUILD_ID)
-            bot.tree.copy_global_to(guild=guild)
-            await bot.tree.sync(guild=guild)
             log.info("슬래시 커맨드 동기화 완료")
 
     

@@ -1,9 +1,12 @@
+import logging
+
 import discord
 from discord import app_commands
 from discord.ext import commands
 from repository.point_repository import *
 from utils.views import error_view, success_view, warn_view, info_view
 
+log = logging.getLogger("lumia-campus-bot.points")
 
 class PointSystem(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -63,6 +66,7 @@ class PointSystem(commands.Cog):
         try:
             result = await plus_point(member.id, points)
         except Exception:
+            log.exception("[포인트 추가] 실패: user=%s amount=%s", member.id, points)
             await interaction.followup.send(
                 view=error_view(
                     f"**{member.display_name}**님의 포인트 추가 중 오류가 발생했어요.\n다시 시도해 주세요."
@@ -76,6 +80,7 @@ class PointSystem(commands.Cog):
                 ephemeral=True,
             )
             return
+        log.info("[포인트 추가] user=%s amount=%s 잔여=%sP by=%s", member.id, points, result, interaction.user.id)
         await interaction.followup.send(
             view=success_view(
                 f"**{member.display_name}**님에게 **{points}P**가 추가되었어요.\n"
@@ -96,6 +101,7 @@ class PointSystem(commands.Cog):
             return
         try:
             result = await minus_point(member.id, points)
+            log.info("[포인트 차감] user=%s amount=%s 잔여=%sP by=%s", member.id, points, result, interaction.user.id)
             await interaction.followup.send(
                 view=success_view(
                     f"**{member.display_name}**님에게 **{points}P**가 차감되었어요.\n"
@@ -105,11 +111,13 @@ class PointSystem(commands.Cog):
             )
         except Exception as e:
             if "23514" in str(e):
+                log.warning("[포인트 차감] 잔액 부족: user=%s amount=%s", member.id, points)
                 await interaction.followup.send(
                     view=warn_view(f"**{member.display_name}**님의 포인트가 부족해요."),
                     ephemeral=True,
                 )
             else:
+                log.exception("[포인트 차감] 실패: user=%s amount=%s", member.id, points)
                 await interaction.followup.send(
                     view=error_view(
                         f"**{member.display_name}**님의 포인트 차감 중 오류가 발생했어요.\n다시 시도해 주세요."
@@ -137,6 +145,7 @@ class PointSystem(commands.Cog):
                 return
             result = await update_point(member.id, points)
             if result is None:
+                log.warning("[포인트 변경] 결과 없음: user=%s new=%s", member.id, points)
                 await interaction.followup.send(
                     view=error_view(
                         f"**{member.display_name}**님의 포인트 업데이트에 실패했어요.\n다시 시도해 주세요."
@@ -144,6 +153,7 @@ class PointSystem(commands.Cog):
                     ephemeral=True,
                 )
                 return
+            log.info("[포인트 변경] user=%s prev=%sP new=%sP by=%s", member.id, prev, points, interaction.user.id)
             await interaction.followup.send(
                 view=success_view(
                     f"**{member.display_name}**님의 포인트가 업데이트되었어요.\n"
@@ -152,6 +162,7 @@ class PointSystem(commands.Cog):
                 ephemeral=True,
             )
         except Exception:
+            log.exception("[포인트 변경] 실패: user=%s new=%s", member.id, points)
             await interaction.followup.send(
                 view=error_view(
                     f"**{member.display_name}**님의 포인트 업데이트 중 오류가 발생했어요.\n다시 시도해 주세요."

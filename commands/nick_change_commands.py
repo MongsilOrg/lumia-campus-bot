@@ -1,8 +1,12 @@
+import logging
+
 import discord
 from discord import app_commands
 from discord.ext import commands
 from utils.views import error_view , success_view
 from repository.nick_repository import nick_change
+
+log = logging.getLogger("lumia-campus-bot.nick")
 
 class NickChangeSystem(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -28,6 +32,7 @@ class NickChangeSystem(commands.Cog):
                 ephemeral=True,
             )
         except Exception:
+            log.exception("[닉변] 실패: user=%s", member.id)
             await interaction.followup.send(
                 view=error_view(
                     f"**{member.display_name}**님의 닉네임 변경 중 오류가 발생했어요.\n다시 시도해 주세요."

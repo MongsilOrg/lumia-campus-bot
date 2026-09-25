@@ -1,3 +1,5 @@
+import logging
+
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -5,6 +7,7 @@ from repository.product_repository import *
 from commands.exchange import refresh_dashboard, _has_required_role
 from utils.views import error_view, success_view, warn_view, info_view
 
+log = logging.getLogger("lumia-campus-bot.products")
 
 class ProductSystem(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -47,10 +50,12 @@ class ProductSystem(commands.Cog):
             await refresh_dashboard(self.bot)
         except Exception as e:
             if "23505" in str(e):
+                log.warning("[상품 추가] 중복 상품명: %s", name)
                 await interaction.followup.send(
                     view=warn_view(f"이미 등록된 상품명이에요: **{name}**"), ephemeral=True
                 )
             else:
+                log.exception("[상품 추가] 실패: %s", name)
                 await interaction.followup.send(
                     view=error_view(f"상품 **{name}** 추가 중 오류가 발생했어요.\n다시 시도해 주세요."),
                     ephemeral=True,
@@ -89,12 +94,14 @@ class ProductSystem(commands.Cog):
         try:
             result = await buy_product(interaction.user.id, name)
         except Exception:
+            log.exception("[구매] 실패: user=%s product=%s", interaction.user.id, name)
             await interaction.followup.send(
                 view=error_view(f"**{name}** 구매 처리 중 오류가 발생했어요.\n다시 시도해 주세요."),
                 ephemeral=True,
             )
             return
-        if result is None:
+        if result is None or result[0] is None:
+            log.error("[구매] 예상치 못한 RPC 결과: user=%s product=%s result=%r", interaction.user.id, name, result)
             await interaction.followup.send(
                 view=error_view(f"**{name}** 구매 처리 중 알 수 없는 오류가 발생했어요.\n다시 시도해 주세요."),
                 ephemeral=True,
@@ -125,6 +132,7 @@ class ProductSystem(commands.Cog):
             )
         else:
             coupon_code, point = result
+            log.info("[구매] 완료: user=%s product=%s 잔여=%sP", interaction.user.id, name, point)
             await interaction.followup.send(
                 view=success_view(
                     f"**{name}** 구매가 완료되었어요.\n"
@@ -149,6 +157,7 @@ class ProductSystem(commands.Cog):
         try:
             result = await extract_coupon_code(interaction.user.id, name)
         except Exception:
+            log.exception("[쿠폰 추출] 실패: user=%s product=%s", interaction.user.id, name)
             await interaction.followup.send(
                 view=error_view(f"**{name}** 쿠폰 추출 중 오류가 발생했어요.\n다시 시도해 주세요."),
                 ephemeral=True,
@@ -159,6 +168,7 @@ class ProductSystem(commands.Cog):
                 view=error_view(f"**{name}**의 재고가 없어요."), ephemeral=True
             )
         else:
+            log.info("[쿠폰 추출] 완료: user=%s product=%s", interaction.user.id, name)
             await interaction.followup.send(
                 view=success_view(f"쿠폰 코드: `{result}`"), ephemeral=True
             )
