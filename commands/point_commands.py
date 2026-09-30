@@ -4,6 +4,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from repository.point_repository import *
+from commands.exchange import _handle_point_check
 from utils.views import error_view, success_view, warn_view, info_view
 
 log = logging.getLogger("lumia-campus-bot.points")
@@ -14,23 +15,7 @@ class PointSystem(commands.Cog):
 
     @app_commands.command(name="포인트", description="내 포인트를 확인합니다.")
     async def get_point_cmd(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=True)
-        user_id = interaction.user.id
-        result = await fetch_point(user_id)
-        if result is None:
-            await interaction.followup.send(
-                view=error_view("등록되지 않은 사용자예요.\n관리자에게 문의해 주세요."),
-                ephemeral=True,
-            )
-            return
-        await interaction.followup.send(
-            view=info_view(
-                f"## 📊 포인트 조회\n\n"
-                f"현재 보유 포인트\n"
-                f"# {result}P"
-            ),
-            ephemeral=True,
-        )
+        await _handle_point_check(interaction)
 
     @app_commands.command(name="포인트_조회", description="다른 유저의 포인트를 확인합니다.")
     @app_commands.describe(member="포인트를 조회할 유저를 선택하세요.")
@@ -40,7 +25,7 @@ class PointSystem(commands.Cog):
         result = await fetch_point(member.id)
         if result is None:
             await interaction.followup.send(
-                view=error_view(f"등록되지 않은 사용자예요: **{member.display_name}**"),
+                view=error_view(f"등록되지 않은 유저입니다: **{member.display_name}**"),
                 ephemeral=True,
             )
             return
@@ -76,7 +61,7 @@ class PointSystem(commands.Cog):
             return
         if result is None:
             await interaction.followup.send(
-                view=error_view(f"등록되지 않은 사용자예요: **{member.display_name}**"),
+                view=error_view(f"등록되지 않은 유저입니다: **{member.display_name}**"),
                 ephemeral=True,
             )
             return
@@ -139,7 +124,7 @@ class PointSystem(commands.Cog):
             prev = await fetch_point(member.id)
             if prev is None:
                 await interaction.followup.send(
-                    view=error_view(f"등록되지 않은 사용자예요: **{member.display_name}**"),
+                    view=error_view(f"등록되지 않은 유저입니다: **{member.display_name}**"),
                     ephemeral=True,
                 )
                 return
@@ -157,7 +142,7 @@ class PointSystem(commands.Cog):
             await interaction.followup.send(
                 view=success_view(
                     f"**{member.display_name}**님의 포인트가 업데이트되었어요.\n"
-                    f"**{prev}P** → **{points}P**"
+                    f"이전 **{prev}P**, 현재 **{points}P**"
                 ),
                 ephemeral=True,
             )
