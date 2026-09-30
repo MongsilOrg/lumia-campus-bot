@@ -71,7 +71,6 @@ def main() -> None:
                 ):
                     if ext not in bot.extensions:
                         await bot.load_extension(ext)
-                # 기존 슬래시 커맨드 정리 (서버에서 제거)
                 guild = discord.Object(id=cfg.GUILD_ID)
                 bot.tree.copy_global_to(guild=guild)
                 await bot.tree.sync(guild=guild)
@@ -80,8 +79,6 @@ def main() -> None:
                 return
             bot._setup_done = True
             log.info("슬래시 커맨드 동기화 완료")
-
-    
 
     bot.run(cfg.BOT_TOKEN, log_handler=None)
 

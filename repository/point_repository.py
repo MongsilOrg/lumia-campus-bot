@@ -24,7 +24,3 @@ async def update_point(user_id, value):
     point = await supabase.rpc("update_point", {"u_id": user_id, "new_value": value}).execute()
     return point.data
 
-
-if __name__ == "__main__":
-    test_user_id = 123123  # 확인할 사용자 ID
-    print("current point:", fetch_point(test_user_id))

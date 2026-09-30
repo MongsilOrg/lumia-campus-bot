@@ -23,7 +23,7 @@
 ## 실행
 
 ```bash
-pip install -r requirements.txt sentry-sdk
+pip install -r requirements.txt
 
 # .env 파일을 만들고 아래 설정 키를 채운다
 python main.py
