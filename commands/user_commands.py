@@ -14,13 +14,13 @@ class UserSystem(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="유저_정보등록", description="유저 정보를 등록합니다.")
-    @app_commands.describe(member="유저를 선택하세요.", email="이메일을 입력하세요.(선택사항)", point="포인트를 입력하세요.(기본값: 0)")
+    @app_commands.describe(member="유저를 선택해주세요.", email="이메일을 입력해주세요. 비워 둘 수 있습니다.", point="포인트를 입력해주세요. 비워 두면 0입니다.")
     @app_commands.default_permissions(administrator=True)
     async def add_user_cmd(self, interaction: discord.Interaction, member: discord.Member, email: str = None, point: int = 0):
         await interaction.response.defer(ephemeral=True)
         if email is not None and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
             await interaction.followup.send(
-                view=warn_view("올바른 이메일 형식이 아니에요. (예: user@example.com)"), ephemeral=True
+                view=warn_view("올바른 이메일 형식이 아닙니다.\n예: user@example.com"), ephemeral=True
             )
             return
         if point < 0:
