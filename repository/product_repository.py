@@ -1,18 +1,31 @@
-from collections import Counter
+import asyncio
 
 from service.superbase import supabase
 
 
-# 상품별 재고(미할당 쿠폰 수) 조회
-# return {"상품명": 재고수, ...}
-async def fetch_product_stock():
+async def _count_stock(product_name):
     response = (
         await supabase.table("store")
-        .select("store_name")
+        .select("id", count="exact", head=True)
+        .eq("store_name", product_name)
         .is_("user_id", "null")
         .execute()
     )
-    return dict(Counter(row["store_name"] for row in response.data))
+    return response.count or 0
+
+
+# 상품별 재고(미할당 쿠폰 수) 조회
+# return {"상품명": 재고수, ...}
+async def fetch_product_stock(product_names):
+    counts = await asyncio.gather(*(_count_stock(name) for name in product_names))
+    return dict(zip(product_names, counts))
+
+
+# return 상품 목록, {"상품명": 재고수}
+async def fetch_products_with_stock():
+    products = await fetch_product()
+    stock = await fetch_product_stock([name for name, _cost, _image in products])
+    return products, stock
 
 # 상품 전체 조회
 # return [product_name : str]

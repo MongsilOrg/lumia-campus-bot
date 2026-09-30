@@ -29,6 +29,7 @@ import discord
 from discord.ext import commands
 
 from utils.config import get_config
+from utils.views import send_error
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,6 +47,12 @@ def main() -> None:
     intents.members = True
 
     bot = commands.Bot(command_prefix="!", intents=intents)
+
+    @bot.tree.error
+    async def on_app_command_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError):
+        name = interaction.command.qualified_name if interaction.command else "?"
+        log.error("[명령] /%s 처리 실패: user=%s", name, interaction.user.id, exc_info=error)
+        await send_error(interaction)
 
     @bot.event
     async def on_ready():
