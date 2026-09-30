@@ -1,10 +1,17 @@
 import logging
+from urllib.parse import urlparse
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 from repository.product_repository import *
-from commands.exchange import refresh_dashboard, _has_required_role
+from commands.exchange import (
+    refresh_dashboard,
+    _has_required_role,
+    is_coupon_code,
+    product_name_autocomplete,
+    purchase_result_view,
+)
 from utils.views import error_view, success_view, warn_view, info_view
 
 log = logging.getLogger("lumia-campus-bot.products")
@@ -17,22 +24,21 @@ class ProductSystem(commands.Cog):
     @app_commands.default_permissions(administrator=True)
     async def get_product_cmd(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        result = await fetch_product()
-        if result is None or len(result) == 0:
+        result, stock = await fetch_products_with_stock()
+        if not result:
             await interaction.followup.send(
-                view=error_view("등록된 상품이 없어요."), ephemeral=True
+                view=info_view("등록된 상품이 없습니다."), ephemeral=True
             )
             return
-        stock = await fetch_product_stock()
         text = "## 📦 상품 목록\n\n"
         for name, cost, _image in result:
             qty = stock.get(name, 0)
             stock_text = "품절" if qty == 0 else f"재고 {qty}개"
-            text += f"**{name}** {cost}P ({stock_text})\n"
+            text += f"**{name}** {cost}P, {stock_text}\n"
         await interaction.followup.send(view=info_view(text), ephemeral=True)
 
     @app_commands.command(name="상품_추가", description="상품을 추가합니다.")
-    @app_commands.describe(name="상품 이름을 입력하세요.", price="상품 가격을 입력하세요.", image_url="상품 이미지 URL을 입력하세요.(선택사항)")
+    @app_commands.describe(name="상품 이름을 입력해주세요.", price="상품 가격을 입력해주세요.", image_url="상품 이미지 URL을 입력해주세요. 비워 둘 수 있습니다.")
     @app_commands.default_permissions(administrator=True)
     async def add_product_cmd(self, interaction: discord.Interaction, name: str, price: int, image_url: str = None):
         await interaction.response.defer(ephemeral=True)
@@ -41,13 +47,15 @@ class ProductSystem(commands.Cog):
                 view=warn_view("가격은 0 이상이어야 해요."), ephemeral=True
             )
             return
+        if image_url is not None:
+            parsed = urlparse(image_url)
+            if parsed.scheme not in ("http", "https") or not parsed.netloc:
+                await interaction.followup.send(
+                    view=warn_view("이미지 URL은 http:// 또는 https://로 시작해야 합니다."), ephemeral=True
+                )
+                return
         try:
-            result = await add_product(name, price, interaction.user.display_name, image_url)
-            await interaction.followup.send(
-                view=success_view(f"상품 **{name}**이(가) **{price}P**로 추가되었어요."),
-                ephemeral=True,
-            )
-            await refresh_dashboard(self.bot)
+            await add_product(name, price, interaction.user.display_name, image_url)
         except Exception as e:
             if "23505" in str(e):
                 log.warning("[상품 추가] 중복 상품명: %s", name)
@@ -60,9 +68,16 @@ class ProductSystem(commands.Cog):
                     view=error_view(f"상품 **{name}** 추가 중 오류가 발생했어요.\n다시 시도해 주세요."),
                     ephemeral=True,
                 )
+            return
+        await interaction.followup.send(
+            view=success_view(f"상품을 추가했습니다: **{name}**, **{price}P**"),
+            ephemeral=True,
+        )
+        await refresh_dashboard(self.bot)
 
     @app_commands.command(name="상품_삭제", description="상품을 삭제합니다.")
     @app_commands.describe(name="상품 이름을 입력하세요.")
+    @app_commands.autocomplete(name=product_name_autocomplete)
     @app_commands.default_permissions(administrator=True)
     async def delete_product_cmd(self, interaction: discord.Interaction, name: str):
         await interaction.response.defer(ephemeral=True)
@@ -73,12 +88,13 @@ class ProductSystem(commands.Cog):
             )
             return
         await interaction.followup.send(
-            view=success_view(f"상품 **{result}**이(가) 삭제되었어요."), ephemeral=True
+            view=success_view(f"상품을 삭제했습니다: **{result}**"), ephemeral=True
         )
         await refresh_dashboard(self.bot)
 
     @app_commands.command(name="상품_구매", description="상품을 구매합니다.")
     @app_commands.describe(name="어떤 상품을 구매할지 입력하세요.")
+    @app_commands.autocomplete(name=product_name_autocomplete)
     async def buy_product_cmd(self, interaction: discord.Interaction, name: str):
         await interaction.response.defer(ephemeral=True)
         member = interaction.user
@@ -100,51 +116,14 @@ class ProductSystem(commands.Cog):
                 ephemeral=True,
             )
             return
-        if result is None or result[0] is None:
-            log.error("[구매] 예상치 못한 RPC 결과: user=%s product=%s result=%r", interaction.user.id, name, result)
-            await interaction.followup.send(
-                view=error_view(f"**{name}** 구매 처리 중 알 수 없는 오류가 발생했어요.\n다시 시도해 주세요."),
-                ephemeral=True,
-            )
-            return
-        error_map = {
-            "주문하신 상품은 존재하지 않습니다 관리자에게 문의 주세요":
-                "상품을 찾을 수 없어요.\n관리자에게 문의해 주세요.",
-            "포인트가 부족합니다.":
-                "포인트가 부족해요.",
-            "재고가 없습니다 관리자에게 문의 주세요":
-                "재고가 없어요.\n관리자에게 문의해 주세요.",
-        }
-        if result[0] == "이미 구매하신 상품입니다.":
-            coupon_code = await fetch_user_coupon(interaction.user.id, name)
-            await interaction.followup.send(
-                view=info_view(
-                    f"## 🎟️ 쿠폰 확인\n\n"
-                    f"이미 구매한 **{name}** 쿠폰이에요.\n"
-                    f"쿠폰: `{coupon_code}`\n"
-                    f"잔여 포인트: **{result[1]}P**"
-                ),
-                ephemeral=True,
-            )
-        elif result[0] in error_map:
-            await interaction.followup.send(
-                view=error_view(error_map[result[0]]), ephemeral=True
-            )
-        else:
-            coupon_code, point = result
-            log.info("[구매] 완료: user=%s product=%s 잔여=%sP", interaction.user.id, name, point)
-            await interaction.followup.send(
-                view=success_view(
-                    f"**{name}** 구매가 완료되었어요.\n"
-                    f"쿠폰: `{coupon_code}`\n"
-                    f"잔여 포인트: **{point}P**"
-                ),
-                ephemeral=True,
-            )
+        result_view, purchased = await purchase_result_view(member, name, result)
+        await interaction.followup.send(view=result_view, ephemeral=True)
+        if purchased:
             await refresh_dashboard(self.bot)
 
     @app_commands.command(name="쿠폰_추출", description="상품의 쿠폰 코드를 추출합니다.")
     @app_commands.describe(name="어떤 상품의 쿠폰 코드를 추출할지 입력하세요.")
+    @app_commands.autocomplete(name=product_name_autocomplete)
     @app_commands.default_permissions(administrator=True)
     async def extract_coupon_code_cmd(self, interaction: discord.Interaction, name: str):
         await interaction.response.defer(ephemeral=True)
@@ -166,6 +145,12 @@ class ProductSystem(commands.Cog):
         if result is None or result == "재고가 없습니다":
             await interaction.followup.send(
                 view=error_view(f"**{name}**의 재고가 없어요."), ephemeral=True
+            )
+        elif not is_coupon_code(result):
+            log.error("[쿠폰 추출] 예상치 못한 RPC 결과: user=%s product=%s result=%r", interaction.user.id, name, result)
+            await interaction.followup.send(
+                view=error_view(f"**{name}** 쿠폰 추출 결과를 확인하지 못했습니다.\n관리자에게 문의해주세요."),
+                ephemeral=True,
             )
         else:
             log.info("[쿠폰 추출] 완료: user=%s product=%s", interaction.user.id, name)
