@@ -16,7 +16,7 @@ class NickChangeSystem(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="닉변", description="유저의 닉네임을 변경합니다.")
-    @app_commands.describe(member="닉네임을 변경할 유저를 선택하세요.", new_nick="새 닉네임을 입력하세요.")
+    @app_commands.describe(member="닉네임을 변경할 유저를 선택해주세요.", new_nick="새 닉네임을 입력해주세요.")
     @app_commands.default_permissions(administrator=True)
     async def change_nick_cmd(self, interaction: discord.Interaction, member: discord.Member, new_nick: str):
         await interaction.response.defer(ephemeral=True)

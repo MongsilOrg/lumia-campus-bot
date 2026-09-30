@@ -174,7 +174,7 @@ class DashboardView(discord.ui.LayoutView):
             container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small, visible=True))
             container.add_item(
                 discord.ui.TextDisplay(
-                    "아래 버튼을 눌러 포인트 조회 또는 상품 구매를 시작해 보세요."
+                    "아래 버튼을 눌러 포인트 조회 또는 상품 구매를 시작해주세요."
                 )
             )
             self.add_item(container)
@@ -227,7 +227,7 @@ async def _handle_point_check(interaction: discord.Interaction) -> None:
     member = interaction.user
     if not isinstance(member, discord.Member):
         await interaction.followup.send(
-            view=_error_view("서버 멤버 정보를 확인할 수 없어요."), ephemeral=True
+            view=_error_view("서버 멤버 정보를 확인할 수 없습니다."), ephemeral=True
         )
         return
 
@@ -236,7 +236,7 @@ async def _handle_point_check(interaction: discord.Interaction) -> None:
     except Exception:
         log.exception("[포인트 조회] 데이터 조회 실패")
         await interaction.followup.send(
-            view=_error_view("포인트 조회 중 오류가 발생했어요.\n다시 시도해 주세요."), ephemeral=True
+            view=_error_view("포인트 조회 중 오류가 발생했습니다.\n다시 시도해주세요."), ephemeral=True
         )
         return
 
@@ -274,7 +274,7 @@ async def _handle_my_purchases(interaction: discord.Interaction) -> None:
     member = interaction.user
     if not isinstance(member, discord.Member):
         await interaction.followup.send(
-            view=_error_view("서버 멤버 정보를 확인할 수 없어요."), ephemeral=True
+            view=_error_view("서버 멤버 정보를 확인할 수 없습니다."), ephemeral=True
         )
         return
 
@@ -283,7 +283,7 @@ async def _handle_my_purchases(interaction: discord.Interaction) -> None:
     except Exception:
         log.exception("[구매내역] 데이터 조회 실패")
         await interaction.followup.send(
-            view=_error_view("구매내역 조회 중 오류가 발생했어요.\n다시 시도해 주세요."), ephemeral=True
+            view=_error_view("구매내역 조회 중 오류가 발생했습니다.\n다시 시도해주세요."), ephemeral=True
         )
         return
 
@@ -313,15 +313,15 @@ async def _handle_buy_start(interaction: discord.Interaction) -> None:
     member = interaction.user
     if not isinstance(member, discord.Member):
         await interaction.followup.send(
-            view=_error_view("서버 멤버 정보를 확인할 수 없어요."), ephemeral=True
+            view=_error_view("서버 멤버 정보를 확인할 수 없습니다."), ephemeral=True
         )
         return
 
     if not _has_required_role(member):
         await interaction.followup.send(
             view=_error_view(
-                "구매 권한이 없어요.\n"
-                "학생회, 학부생, 재학생, 신입생 역할이 필요해요."
+                "구매 권한이 없습니다.\n"
+                "학생회, 학부생, 재학생, 신입생 역할이 필요합니다."
             ),
             ephemeral=True,
         )
@@ -334,7 +334,7 @@ async def _handle_buy_start(interaction: discord.Interaction) -> None:
     except Exception:
         log.exception("[구매] 데이터 조회 실패")
         await interaction.followup.send(
-            view=_error_view("상품 및 포인트 조회 중 오류가 발생했어요.\n다시 시도해 주세요."), ephemeral=True
+            view=_error_view("상품 및 포인트 조회 중 오류가 발생했습니다.\n다시 시도해주세요."), ephemeral=True
         )
         return
 
@@ -349,7 +349,7 @@ async def _handle_buy_start(interaction: discord.Interaction) -> None:
 
     if not products:
         await interaction.followup.send(
-            view=_error_view("현재 구매 가능한 상품이 없어요."), ephemeral=True
+            view=_error_view("현재 구매 가능한 상품이 없습니다."), ephemeral=True
         )
         return
 
@@ -371,7 +371,7 @@ def _make_product_select_view(
     container.add_item(
         discord.ui.TextDisplay(
             f"## 🛒 상품 구매\n\n"
-            f"**{nickname}**님, 구매할 상품을 선택해 주세요.\n"
+            f"**{nickname}**님, 구매할 상품을 선택해주세요.\n"
             f"보유 포인트: **{points}P**"
         )
     )
@@ -382,7 +382,7 @@ def _make_product_select_view(
         qty = stock.get(name, 0)
         desc = f"{cost}P, 품절" if qty == 0 else f"{cost}P, 재고 {qty}개"
         options.append(discord.SelectOption(label=name, description=desc, value=name))
-    select = discord.ui.Select(placeholder="상품을 선택해 주세요", options=options)
+    select = discord.ui.Select(placeholder="상품을 선택해주세요", options=options)
 
     async def on_select(select_interaction: discord.Interaction):
         if select_interaction.user.id != member_id:
@@ -391,7 +391,7 @@ def _make_product_select_view(
         selected_qty = stock.get(selected_name, 0)
         if selected_qty == 0:
             await select_interaction.response.send_message(
-                view=_error_view("품절된 상품이에요. 다른 상품을 선택해 주세요."),
+                view=_error_view("품절된 상품입니다. 다른 상품을 선택해주세요."),
                 ephemeral=True,
             )
             return
@@ -432,13 +432,13 @@ def _make_buy_confirm_view(
 
     text = (
         f"## 🛒 구매 확인\n\n"
-        f"**{nickname}**님, 아래 상품을 구매할까요?\n\n"
+        f"**{nickname}**님, 아래 상품을 구매하시겠습니까?\n\n"
         f"상품: **{escape_markdown(product_name)}**\n"
         f"상품 가격: **{product_cost}P**\n"
         f"보유 포인트: **{points}P**"
     )
     if insufficient:
-        text += "\n-# ⚠️ 포인트가 부족해요"
+        text += "\n-# ⚠️ 포인트가 부족합니다"
 
     container = discord.ui.Container(accent_colour=discord.Colour.blurple())
     container.add_item(discord.ui.TextDisplay(text))
@@ -471,11 +471,11 @@ def _make_buy_confirm_view(
         view.stop()
         if not btn_interaction.response.is_done():
             await btn_interaction.response.edit_message(
-                view=_view("🚫 구매가 취소되었어요.", discord.Colour.greyple())
+                view=_view("🚫 구매가 취소되었습니다.", discord.Colour.greyple())
             )
         else:
             await btn_interaction.edit_original_response(
-                view=_view("🚫 구매가 취소되었어요.", discord.Colour.greyple())
+                view=_view("🚫 구매가 취소되었습니다.", discord.Colour.greyple())
             )
 
     confirm_btn.callback = on_confirm
@@ -501,7 +501,7 @@ async def _handle_buy_confirm(
     except Exception:
         log.exception("[구매] 예상치 못한 오류")
         await interaction.edit_original_response(
-            view=_error_view("구매 처리 중 오류가 발생했어요.\n다시 시도해 주세요.")
+            view=_error_view("구매 처리 중 오류가 발생했습니다.\n다시 시도해주세요.")
         )
         return
 
