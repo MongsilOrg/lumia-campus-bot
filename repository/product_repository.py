@@ -92,13 +92,3 @@ async def fetch_user_coupon(user_id, product_name):
         .execute()
     )
     return response.data[0]['store_product'] if response.data else None
-
-
-async def add_coupon_code(product_name , coupon_code):
-    data = {
-        "store_name" : product_name,
-        "store_product" : coupon_code,
-
-    }
-    res = await supabase.table("store").insert(data).execute()
-    return res.data if res else None
