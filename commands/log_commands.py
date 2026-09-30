@@ -32,7 +32,7 @@ class LogSystem(commands.Cog):
         pview.message = await interaction.followup.send(view=pview, ephemeral=True)
 
     @app_commands.command(name="구매이력_조회", description="다른 유저의 구매 이력을 확인합니다.")
-    @app_commands.describe(member="구매이력을 조회할 유저를 선택하세요.")
+    @app_commands.describe(member="구매이력을 조회할 유저를 선택해주세요.")
     @app_commands.default_permissions(administrator=True)
     async def get_user_log_cmd(self, interaction: discord.Interaction, member: discord.Member):
         await interaction.response.defer(ephemeral=True)
@@ -55,7 +55,7 @@ class LogSystem(commands.Cog):
         pview.message = await interaction.followup.send(view=pview, ephemeral=True)
 
     @app_commands.command(name="상품별_이력조회", description="상품별 이력을 확인합니다.")
-    @app_commands.describe(name="이력을 조회할 상품을 선택하세요.")
+    @app_commands.describe(name="이력을 조회할 상품을 선택해주세요.")
     @app_commands.autocomplete(name=product_name_autocomplete)
     @app_commands.default_permissions(administrator=True)
     async def get_product_log_cmd(self, interaction: discord.Interaction, name: str):

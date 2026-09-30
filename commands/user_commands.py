@@ -25,7 +25,7 @@ class UserSystem(commands.Cog):
             return
         if point < 0:
             await interaction.followup.send(
-                view=warn_view("포인트는 0 이상이어야 해요."), ephemeral=True
+                view=warn_view("포인트는 0 이상이어야 합니다."), ephemeral=True
             )
             return
         try:
@@ -33,33 +33,33 @@ class UserSystem(commands.Cog):
             if result is None:
                 await interaction.followup.send(
                     view=error_view(
-                        f"**{member.display_name}**님의 등록에 실패했어요.\n다시 시도해 주세요."
+                        f"**{member.display_name}**님의 등록에 실패했습니다.\n다시 시도해주세요."
                     ),
                     ephemeral=True,
                 )
                 return
             await interaction.followup.send(
-                view=success_view(f"**{member.display_name}**님이 등록되었어요."),
+                view=success_view(f"**{member.display_name}**님이 등록되었습니다."),
                 ephemeral=True,
             )
         except Exception as e:
             if "23505" in str(e):
                 log.warning("[유저 등록] 이미 등록됨: user=%s", member.id)
                 await interaction.followup.send(
-                    view=warn_view(f"이미 등록된 유저예요: **{member.display_name}**"),
+                    view=warn_view(f"이미 등록된 유저입니다: **{member.display_name}**"),
                     ephemeral=True,
                 )
             else:
                 log.exception("[유저 등록] 실패: user=%s", member.id)
                 await interaction.followup.send(
                     view=error_view(
-                        f"**{member.display_name}**님의 등록 중 오류가 발생했어요.\n다시 시도해 주세요."
+                        f"**{member.display_name}**님의 등록 중 오류가 발생했습니다.\n다시 시도해주세요."
                     ),
                     ephemeral=True,
                 )
 
     @app_commands.command(name="유저_정보삭제", description="유저 정보를 삭제합니다.")
-    @app_commands.describe(member="유저를 선택하세요.")
+    @app_commands.describe(member="유저를 선택해주세요.")
     @app_commands.default_permissions(administrator=True)
     async def delete_user_cmd(self, interaction: discord.Interaction, member: discord.Member):
         await interaction.response.defer(ephemeral=True)
@@ -67,24 +67,24 @@ class UserSystem(commands.Cog):
             result = await delete_user(member.id)
             if result is None:
                 await interaction.followup.send(
-                    view=error_view(f"등록되지 않은 유저예요: **{member.display_name}**"),
+                    view=error_view(f"등록되지 않은 유저입니다: **{member.display_name}**"),
                     ephemeral=True,
                 )
                 return
             await interaction.followup.send(
-                view=success_view(f"**{result}**님이 삭제되었어요."), ephemeral=True
+                view=success_view(f"**{result}**님이 삭제되었습니다."), ephemeral=True
             )
         except Exception as e:
             if "23503" in str(e):
                 log.warning("[유저 삭제] 구매 이력 있음: user=%s", member.id)
                 await interaction.followup.send(
-                    view=warn_view("구매 이력이 있는 유저는 삭제할 수 없어요."), ephemeral=True
+                    view=warn_view("구매 이력이 있는 유저는 삭제할 수 없습니다."), ephemeral=True
                 )
             else:
                 log.exception("[유저 삭제] 실패: user=%s", member.id)
                 await interaction.followup.send(
                     view=error_view(
-                        f"**{member.display_name}**님의 삭제 중 오류가 발생했어요.\n다시 시도해 주세요."
+                        f"**{member.display_name}**님의 삭제 중 오류가 발생했습니다.\n다시 시도해주세요."
                     ),
                     ephemeral=True,
                 )
