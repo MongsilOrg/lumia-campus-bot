@@ -39,6 +39,10 @@ logging.basicConfig(
 logging.getLogger("httpx").setLevel(logging.WARNING)
 log = logging.getLogger("lumia-campus-bot")
 
+# 음성 기능을 쓰지 않아 PyNaCl, davey 미설치 경고를 끔
+discord.VoiceClient.warn_nacl = False
+discord.VoiceClient.warn_dave = False
+
 
 def main() -> None:
     cfg = get_config()
