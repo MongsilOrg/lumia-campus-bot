@@ -21,7 +21,7 @@ def _sentry_before_send(event, hint):
     return event
 
 
-sentry_sdk.init(dsn=os.getenv("SENTRY_DSN", ""), traces_sample_rate=0.1, environment="production", before_send=_sentry_before_send)
+sentry_sdk.init(dsn=os.getenv("SENTRY_DSN", ""), traces_sample_rate=0.1, before_send=_sentry_before_send)
 
 import logging
 from service.superbase import init_supabase
