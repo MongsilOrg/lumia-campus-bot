@@ -26,7 +26,7 @@ sentry_sdk.init(dsn=os.getenv("SENTRY_DSN", ""), traces_sample_rate=0.1, before_
 import logging
 from service.superbase import init_supabase
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from utils.config import get_config
 from utils.views import send_error
@@ -51,6 +51,15 @@ def main() -> None:
     intents.members = True
 
     bot = commands.Bot(command_prefix="!", intents=intents)
+
+    # Supabase 무료 프로젝트는 일주일간 DB 요청이 적으면 일시정지됨
+    @tasks.loop(hours=4)
+    async def keep_supabase_awake():
+        try:
+            client = await init_supabase()
+            await client.table("products").select("product_name").limit(1).execute()
+        except Exception:
+            log.warning("Supabase 유지 조회 실패", exc_info=True)
 
     @bot.tree.error
     async def on_app_command_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError):
@@ -83,6 +92,9 @@ def main() -> None:
                 return
             bot._setup_done = True
             log.info("슬래시 커맨드 동기화 완료")
+
+        if not keep_supabase_awake.is_running():
+            keep_supabase_awake.start()
 
     bot.run(cfg.BOT_TOKEN, log_handler=None)
 
