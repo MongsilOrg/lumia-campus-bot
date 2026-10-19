@@ -391,7 +391,7 @@ def _make_product_select_view(
         selected_qty = stock.get(selected_name, 0)
         if selected_qty == 0:
             await select_interaction.response.send_message(
-                view=_error_view("품절된 상품입니다. 다른 상품을 선택해주세요."),
+                view=_error_view("품절된 상품입니다.\n다른 상품을 선택해주세요."),
                 ephemeral=True,
             )
             return

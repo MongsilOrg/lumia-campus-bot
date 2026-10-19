@@ -74,8 +74,8 @@ class PointSystem(commands.Cog):
             ephemeral=True,
         )
 
-    @app_commands.command(name="포인트_감소", description="포인트를 감소합니다.")
-    @app_commands.describe(member="유저를 선택해주세요.", points="감소할 포인트 양")
+    @app_commands.command(name="포인트_감소", description="포인트를 차감합니다.")
+    @app_commands.describe(member="유저를 선택해주세요.", points="차감할 포인트 양")
     @app_commands.default_permissions(administrator=True)
     async def remove_point_cmd(self, interaction: discord.Interaction, member: discord.Member, points: int):
         await interaction.response.defer(ephemeral=True)
