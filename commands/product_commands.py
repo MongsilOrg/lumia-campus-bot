@@ -60,7 +60,7 @@ class ProductSystem(commands.Cog):
             if "23505" in str(e):
                 log.warning("[상품 추가] 중복 상품명: %s", name)
                 await interaction.followup.send(
-                    view=warn_view(f"이미 등록된 상품명입니다: **{name}**"), ephemeral=True
+                    view=warn_view(f"이미 등록된 상품명입니다: **{name}**\n다른 상품명으로 입력해주세요."), ephemeral=True
                 )
             else:
                 log.exception("[상품 추가] 실패: %s", name)
@@ -84,7 +84,7 @@ class ProductSystem(commands.Cog):
         result = await delete_product(name)
         if result is None:
             await interaction.followup.send(
-                view=error_view(f"존재하지 않는 상품입니다: **{name}**"), ephemeral=True
+                view=error_view(f"존재하지 않는 상품입니다: **{name}**\n/상품_조회로 상품명을 확인해주세요."), ephemeral=True
             )
             return
         await interaction.followup.send(
@@ -130,7 +130,7 @@ class ProductSystem(commands.Cog):
         products = await fetch_product()
         if not any(p[0] == name for p in products):
             await interaction.followup.send(
-                view=error_view(f"존재하지 않는 상품입니다: **{name}**"), ephemeral=True
+                view=error_view(f"존재하지 않는 상품입니다: **{name}**\n/상품_조회로 상품명을 확인해주세요."), ephemeral=True
             )
             return
         try:

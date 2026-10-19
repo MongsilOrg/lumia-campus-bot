@@ -25,7 +25,7 @@ class PointSystem(commands.Cog):
         result = await fetch_point(member.id)
         if result is None:
             await interaction.followup.send(
-                view=error_view(f"등록되지 않은 유저입니다: **{member.display_name}**"),
+                view=error_view(f"등록되지 않은 유저입니다: **{member.display_name}**\n/유저_정보등록으로 먼저 등록해주세요."),
                 ephemeral=True,
             )
             return
@@ -61,7 +61,7 @@ class PointSystem(commands.Cog):
             return
         if result is None:
             await interaction.followup.send(
-                view=error_view(f"등록되지 않은 유저입니다: **{member.display_name}**"),
+                view=error_view(f"등록되지 않은 유저입니다: **{member.display_name}**\n/유저_정보등록으로 먼저 등록해주세요."),
                 ephemeral=True,
             )
             return
@@ -98,7 +98,7 @@ class PointSystem(commands.Cog):
             if "23514" in str(e):
                 log.warning("[포인트 차감] 잔액 부족: user=%s amount=%s", member.id, points)
                 await interaction.followup.send(
-                    view=warn_view(f"**{member.display_name}**님의 포인트가 부족합니다."),
+                    view=warn_view(f"**{member.display_name}**님의 포인트가 부족합니다.\n/포인트_조회로 보유 포인트를 확인해주세요."),
                     ephemeral=True,
                 )
             else:
@@ -124,7 +124,7 @@ class PointSystem(commands.Cog):
             prev = await fetch_point(member.id)
             if prev is None:
                 await interaction.followup.send(
-                    view=error_view(f"등록되지 않은 유저입니다: **{member.display_name}**"),
+                    view=error_view(f"등록되지 않은 유저입니다: **{member.display_name}**\n/유저_정보등록으로 먼저 등록해주세요."),
                     ephemeral=True,
                 )
                 return

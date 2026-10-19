@@ -42,7 +42,7 @@ _BUY_ERRORS = {
     "주문하신 상품은 존재하지 않습니다 관리자에게 문의 주세요":
         "상품을 찾을 수 없습니다.\n관리자에게 문의해주세요.",
     "포인트가 부족합니다.":
-        "포인트가 부족합니다.",
+        "포인트가 부족합니다.\n/포인트로 보유 포인트를 확인해주세요.",
     "재고가 없습니다 관리자에게 문의 주세요":
         "재고가 없습니다.\n관리자에게 문의해주세요.",
 }
@@ -171,12 +171,6 @@ class DashboardView(discord.ui.LayoutView):
                     )
                 else:
                     container.add_item(text)
-            container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small, visible=True))
-            container.add_item(
-                discord.ui.TextDisplay(
-                    "아래 버튼을 눌러 포인트 조회 또는 상품 구매를 시작해주세요."
-                )
-            )
             self.add_item(container)
             for child in existing:
                 self.add_item(child)
