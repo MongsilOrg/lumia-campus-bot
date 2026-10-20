@@ -1,7 +1,7 @@
 from service.superbase import supabase
 
 # 구매 내역 조회
-# 반환 형식 [name : str , product : str]
+# 반환 형식 ([[name : str , product : str]], count : int)
 async def get_log(user_id, page=1, page_size=20):
     start = (page - 1) * page_size
     end = start + page_size - 1
@@ -17,7 +17,7 @@ async def get_log(user_id, page=1, page_size=20):
     return data, response.count
 
 # 상품별 구매 내역 조회
-# 반환 형식 [name : str]
+# 반환 형식 ([[name : str]], count : int)
 async def get_product_log(product_name, page=1, page_size=20):
     start = (page - 1) * page_size
     end = start + page_size - 1

@@ -28,7 +28,7 @@ async def fetch_products_with_stock():
     return products, stock
 
 # 상품 전체 조회
-# return [product_name : str]
+# return [[product_name : str , product_cost : int , product_image : str | None]]
 async def fetch_product():
     response = (
         await supabase.table("products")
