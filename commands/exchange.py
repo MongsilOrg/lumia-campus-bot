@@ -539,7 +539,7 @@ class _DashboardManager(commands.Cog):
         self._pending = False
 
     async def ensure_dashboard(self) -> None:
-        """대시보드를 갱신한다. 갱신 중에 들어온 요청은 끝난 뒤 한 번으로 합친다."""
+        """대시보드를 갱신한다. 갱신 중에 받은 요청은 끝난 뒤 한 번으로 합친다."""
         if self._lock.locked():
             self._pending = True
             return

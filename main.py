@@ -3,7 +3,7 @@ from __future__ import annotations
 import sentry_sdk, os
 from dotenv import load_dotenv
 
-# utils.config 를 import 하기 전이라 여기서 .env 를 읽어야 DSN 이 빈 문자열로 안 들어간다
+# utils.config 를 import 하기 전이라 여기서 .env 를 읽어야 DSN 이 빈 문자열로 설정되지 않음
 load_dotenv()
 
 
@@ -59,7 +59,7 @@ def main() -> None:
             client = await init_supabase()
             await client.table("products").select("product_name").limit(1).execute()
         except Exception:
-            log.warning("Supabase 유지 조회 실패", exc_info=True)
+            log.warning("Supabase 일시정지 방지 조회 실패", exc_info=True)
 
     @bot.tree.error
     async def on_app_command_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError):
