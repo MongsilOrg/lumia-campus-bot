@@ -81,7 +81,7 @@ class PointSystem(commands.Cog):
         await interaction.response.defer(ephemeral=True)
         if points <= 0:
             await interaction.followup.send(
-                view=warn_view("감소할 포인트는 1 이상이어야 합니다."), ephemeral=True
+                view=warn_view("차감할 포인트는 1 이상이어야 합니다."), ephemeral=True
             )
             return
         try:
@@ -89,7 +89,7 @@ class PointSystem(commands.Cog):
             log.info("[포인트 차감] user=%s amount=%s 잔여=%sP by=%s", member.id, points, result, interaction.user.id)
             await interaction.followup.send(
                 view=success_view(
-                    f"**{member.display_name}**님에게 **{points}P**가 차감되었습니다.\n"
+                    f"**{member.display_name}**님의 포인트에서 **{points}P**가 차감되었습니다.\n"
                     f"현재 포인트: **{result}P**"
                 ),
                 ephemeral=True,
@@ -110,8 +110,8 @@ class PointSystem(commands.Cog):
                     ephemeral=True,
                 )
 
-    @app_commands.command(name="포인트_업데이트", description="포인트를 업데이트합니다.")
-    @app_commands.describe(member="유저를 선택해주세요.", points="업데이트할 포인트 양")
+    @app_commands.command(name="포인트_업데이트", description="포인트를 입력한 값으로 변경합니다.")
+    @app_commands.describe(member="유저를 선택해주세요.", points="변경 후 포인트")
     @app_commands.default_permissions(administrator=True)
     async def update_point_cmd(self, interaction: discord.Interaction, member: discord.Member, points: int):
         await interaction.response.defer(ephemeral=True)
@@ -133,7 +133,7 @@ class PointSystem(commands.Cog):
                 log.warning("[포인트 변경] 결과 없음: user=%s new=%s", member.id, points)
                 await interaction.followup.send(
                     view=error_view(
-                        f"**{member.display_name}**님의 포인트 업데이트에 실패했습니다.\n다시 시도해주세요."
+                        f"**{member.display_name}**님의 포인트 변경에 실패했습니다.\n다시 시도해주세요."
                     ),
                     ephemeral=True,
                 )
@@ -141,7 +141,7 @@ class PointSystem(commands.Cog):
             log.info("[포인트 변경] user=%s prev=%sP new=%sP by=%s", member.id, prev, points, interaction.user.id)
             await interaction.followup.send(
                 view=success_view(
-                    f"**{member.display_name}**님의 포인트가 업데이트되었습니다.\n"
+                    f"**{member.display_name}**님의 포인트가 변경되었습니다.\n"
                     f"이전 **{prev}P**, 현재 **{points}P**"
                 ),
                 ephemeral=True,
@@ -150,7 +150,7 @@ class PointSystem(commands.Cog):
             log.exception("[포인트 변경] 실패: user=%s new=%s", member.id, points)
             await interaction.followup.send(
                 view=error_view(
-                    f"**{member.display_name}**님의 포인트 업데이트 중 오류가 발생했습니다.\n다시 시도해주세요."
+                    f"**{member.display_name}**님의 포인트 변경 중 오류가 발생했습니다.\n다시 시도해주세요."
                 ),
                 ephemeral=True,
             )
