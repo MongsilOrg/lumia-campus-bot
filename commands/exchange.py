@@ -106,7 +106,7 @@ async def purchase_result_view(
             code = None
         if not code:
             return _error_view(
-                "이미 구매한 상품이지만 쿠폰을 불러오지 못했습니다.\n구매내역에서 확인해주세요."
+                "이미 구매한 상품이지만 쿠폰을 불러오지 못했습니다.\n구매 내역에서 확인해주세요."
             ), False
         return _coupon_view(
             "🎟️ 쿠폰 확인",
@@ -122,7 +122,7 @@ async def purchase_result_view(
     if not is_coupon_code(status):
         log.error("[구매] 예상치 못한 RPC 결과: user=%s product=%s result=%r", member.id, product_name, result)
         return _error_view(
-            "구매 결과를 확인하지 못했습니다.\n구매내역을 확인하고 관리자에게 문의해주세요."
+            "구매 결과를 확인하지 못했습니다.\n구매 내역을 확인하고 관리자에게 문의해주세요."
         ), False
 
     log.info("[구매] 완료: user=%s product=%s 잔여=%sP", member.id, product_name, points)
@@ -149,8 +149,7 @@ class DashboardView(discord.ui.LayoutView):
             container = discord.ui.Container(accent_colour=discord.Colour.blurple())
             container.add_item(
                 discord.ui.TextDisplay(
-                    "# 🏪 루미아 교환소\n"
-                    "-# 루미아 캠퍼스"
+                    "# 루미아 교환소"
                 )
             )
             container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small, visible=True))
@@ -178,7 +177,7 @@ class DashboardView(discord.ui.LayoutView):
     row: discord.ui.ActionRow[DashboardView] = discord.ui.ActionRow()
 
     @row.button(
-        label="📊 포인트 조회",
+        label="포인트 조회",
         custom_id="dashboard:point_check",
         style=discord.ButtonStyle.secondary,
     )
@@ -188,7 +187,7 @@ class DashboardView(discord.ui.LayoutView):
         await _handle_point_check(interaction)
 
     @row.button(
-        label="🛒 상품 구매",
+        label="상품 구매",
         custom_id="dashboard:exchange",
         style=discord.ButtonStyle.primary,
     )
@@ -198,7 +197,7 @@ class DashboardView(discord.ui.LayoutView):
         await _handle_buy_start(interaction)
 
     @row.button(
-        label="🎟️ 구매내역",
+        label="구매 내역",
         custom_id="dashboard:my_purchases",
         style=discord.ButtonStyle.secondary,
     )
@@ -221,7 +220,7 @@ async def _handle_point_check(interaction: discord.Interaction) -> None:
     member = interaction.user
     if not isinstance(member, discord.Member):
         await interaction.followup.send(
-            view=_error_view("서버 멤버 정보를 확인할 수 없습니다."), ephemeral=True
+            view=_error_view("서버 멤버 정보를 확인할 수 없습니다.\n서버 채널에서 다시 시도해주세요."), ephemeral=True
         )
         return
 
@@ -268,7 +267,7 @@ async def _handle_my_purchases(interaction: discord.Interaction) -> None:
     member = interaction.user
     if not isinstance(member, discord.Member):
         await interaction.followup.send(
-            view=_error_view("서버 멤버 정보를 확인할 수 없습니다."), ephemeral=True
+            view=_error_view("서버 멤버 정보를 확인할 수 없습니다.\n서버 채널에서 다시 시도해주세요."), ephemeral=True
         )
         return
 
@@ -277,13 +276,13 @@ async def _handle_my_purchases(interaction: discord.Interaction) -> None:
     except Exception:
         log.exception("[구매내역] 데이터 조회 실패")
         await interaction.followup.send(
-            view=_error_view("구매내역 조회 중 오류가 발생했습니다.\n다시 시도해주세요."), ephemeral=True
+            view=_error_view("구매 내역 조회 중 오류가 발생했습니다.\n다시 시도해주세요."), ephemeral=True
         )
         return
 
     if not result:
         await interaction.followup.send(
-            view=_info_view("구매내역이 없습니다."), ephemeral=True
+            view=_info_view("구매 내역이 없습니다."), ephemeral=True
         )
         return
 
@@ -307,7 +306,7 @@ async def _handle_buy_start(interaction: discord.Interaction) -> None:
     member = interaction.user
     if not isinstance(member, discord.Member):
         await interaction.followup.send(
-            view=_error_view("서버 멤버 정보를 확인할 수 없습니다."), ephemeral=True
+            view=_error_view("서버 멤버 정보를 확인할 수 없습니다.\n서버 채널에서 다시 시도해주세요."), ephemeral=True
         )
         return
 
@@ -365,7 +364,6 @@ def _make_product_select_view(
     container.add_item(
         discord.ui.TextDisplay(
             f"## 🛒 상품 구매\n\n"
-            f"**{nickname}**님, 구매할 상품을 선택해주세요.\n"
             f"보유 포인트: **{points}P**"
         )
     )
@@ -432,7 +430,7 @@ def _make_buy_confirm_view(
         f"보유 포인트: **{points}P**"
     )
     if insufficient:
-        text += "\n-# ⚠️ 포인트가 부족합니다"
+        text += "\n-# ⚠️ 포인트가 부족합니다."
 
     container = discord.ui.Container(accent_colour=discord.Colour.blurple())
     container.add_item(discord.ui.TextDisplay(text))

@@ -14,7 +14,7 @@ class UserSystem(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="유저_정보등록", description="유저 정보를 등록합니다.")
-    @app_commands.describe(member="유저를 선택해주세요.", email="이메일을 입력해주세요. 비워 둘 수 있습니다.", point="포인트를 입력해주세요. 비워 두면 0입니다.")
+    @app_commands.describe(member="대상 유저", email="이메일", point="시작 포인트, 기본 0")
     @app_commands.default_permissions(administrator=True)
     async def add_user_cmd(self, interaction: discord.Interaction, member: discord.Member, email: str = None, point: int = 0):
         await interaction.response.defer(ephemeral=True)
@@ -39,7 +39,7 @@ class UserSystem(commands.Cog):
                 )
                 return
             await interaction.followup.send(
-                view=success_view(f"**{member.display_name}**님이 등록되었습니다."),
+                view=success_view(f"**{member.display_name}**님을 등록했습니다."),
                 ephemeral=True,
             )
         except Exception as e:
@@ -59,7 +59,7 @@ class UserSystem(commands.Cog):
                 )
 
     @app_commands.command(name="유저_정보삭제", description="유저 정보를 삭제합니다.")
-    @app_commands.describe(member="유저를 선택해주세요.")
+    @app_commands.describe(member="대상 유저")
     @app_commands.default_permissions(administrator=True)
     async def delete_user_cmd(self, interaction: discord.Interaction, member: discord.Member):
         await interaction.response.defer(ephemeral=True)
@@ -72,13 +72,13 @@ class UserSystem(commands.Cog):
                 )
                 return
             await interaction.followup.send(
-                view=success_view(f"**{result}**님이 삭제되었습니다."), ephemeral=True
+                view=success_view(f"**{result}**님의 정보를 삭제했습니다."), ephemeral=True
             )
         except Exception as e:
             if "23503" in str(e):
                 log.warning("[유저 삭제] 구매 이력 있음: user=%s", member.id)
                 await interaction.followup.send(
-                    view=warn_view("구매 이력이 있는 유저는 삭제할 수 없습니다."), ephemeral=True
+                    view=warn_view("구매 내역이 있는 유저는 삭제할 수 없습니다."), ephemeral=True
                 )
             else:
                 log.exception("[유저 삭제] 실패: user=%s", member.id)

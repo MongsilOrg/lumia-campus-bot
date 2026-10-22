@@ -20,7 +20,7 @@ class ProductSystem(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-    @app_commands.command(name="상품_조회", description="등록된 상품들을 조회합니다.")
+    @app_commands.command(name="상품_조회", description="등록된 상품을 조회합니다.")
     @app_commands.default_permissions(administrator=True)
     async def get_product_cmd(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
@@ -38,7 +38,7 @@ class ProductSystem(commands.Cog):
         await interaction.followup.send(view=info_view(text), ephemeral=True)
 
     @app_commands.command(name="상품_추가", description="상품을 추가합니다.")
-    @app_commands.describe(name="상품 이름을 입력해주세요.", price="상품 가격을 입력해주세요.", image_url="상품 이미지 URL을 입력해주세요. 비워 둘 수 있습니다.")
+    @app_commands.describe(name="상품 이름", price="상품 가격", image_url="상품 이미지 URL")
     @app_commands.default_permissions(administrator=True)
     async def add_product_cmd(self, interaction: discord.Interaction, name: str, price: int, image_url: str = None):
         await interaction.response.defer(ephemeral=True)
@@ -76,7 +76,7 @@ class ProductSystem(commands.Cog):
         await refresh_dashboard(self.bot)
 
     @app_commands.command(name="상품_삭제", description="상품을 삭제합니다.")
-    @app_commands.describe(name="상품 이름을 입력해주세요.")
+    @app_commands.describe(name="상품 이름")
     @app_commands.autocomplete(name=product_name_autocomplete)
     @app_commands.default_permissions(administrator=True)
     async def delete_product_cmd(self, interaction: discord.Interaction, name: str):
@@ -93,7 +93,7 @@ class ProductSystem(commands.Cog):
         await refresh_dashboard(self.bot)
 
     @app_commands.command(name="상품_구매", description="상품을 구매합니다.")
-    @app_commands.describe(name="어떤 상품을 구매할지 입력해주세요.")
+    @app_commands.describe(name="구매할 상품")
     @app_commands.autocomplete(name=product_name_autocomplete)
     async def buy_product_cmd(self, interaction: discord.Interaction, name: str):
         await interaction.response.defer(ephemeral=True)
@@ -122,7 +122,7 @@ class ProductSystem(commands.Cog):
             await refresh_dashboard(self.bot)
 
     @app_commands.command(name="쿠폰_추출", description="상품의 쿠폰 코드를 추출합니다.")
-    @app_commands.describe(name="어떤 상품의 쿠폰 코드를 추출할지 입력해주세요.")
+    @app_commands.describe(name="쿠폰 코드를 추출할 상품")
     @app_commands.autocomplete(name=product_name_autocomplete)
     @app_commands.default_permissions(administrator=True)
     async def extract_coupon_code_cmd(self, interaction: discord.Interaction, name: str):
@@ -144,12 +144,12 @@ class ProductSystem(commands.Cog):
             return
         if result is None or result == "재고가 없습니다":
             await interaction.followup.send(
-                view=error_view(f"**{name}**의 재고가 없습니다."), ephemeral=True
+                view=error_view(f"**{name}**의 재고가 없습니다.\nSupabase `store` 테이블에 쿠폰을 추가해주세요."), ephemeral=True
             )
         elif not is_coupon_code(result):
             log.error("[쿠폰 추출] 예상치 못한 RPC 결과: user=%s product=%s result=%r", interaction.user.id, name, result)
             await interaction.followup.send(
-                view=error_view(f"**{name}** 쿠폰 추출 결과를 확인하지 못했습니다.\n관리자에게 문의해주세요."),
+                view=error_view(f"**{name}** 쿠폰 추출 결과를 확인하지 못했습니다.\n/구매이력에서 추출된 쿠폰이 있는지 확인해주세요."),
                 ephemeral=True,
             )
         else:

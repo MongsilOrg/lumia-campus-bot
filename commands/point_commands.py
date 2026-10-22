@@ -18,7 +18,7 @@ class PointSystem(commands.Cog):
         await _handle_point_check(interaction)
 
     @app_commands.command(name="포인트_조회", description="다른 유저의 포인트를 확인합니다.")
-    @app_commands.describe(member="포인트를 조회할 유저를 선택해주세요.")
+    @app_commands.describe(member="대상 유저")
     @app_commands.default_permissions(administrator=True)
     async def get_user_point_cmd(self, interaction: discord.Interaction, member: discord.Member):
         await interaction.response.defer(ephemeral=True)
@@ -39,7 +39,7 @@ class PointSystem(commands.Cog):
         )
 
     @app_commands.command(name="포인트_추가", description="포인트를 추가합니다.")
-    @app_commands.describe(member="유저를 선택해주세요.", points="추가할 포인트 양")
+    @app_commands.describe(member="대상 유저", points="추가할 포인트")
     @app_commands.default_permissions(administrator=True)
     async def add_point_cmd(self, interaction: discord.Interaction, member: discord.Member, points: int):
         await interaction.response.defer(ephemeral=True)
@@ -68,14 +68,14 @@ class PointSystem(commands.Cog):
         log.info("[포인트 추가] user=%s amount=%s 잔여=%sP by=%s", member.id, points, result, interaction.user.id)
         await interaction.followup.send(
             view=success_view(
-                f"**{member.display_name}**님에게 **{points}P**가 추가되었습니다.\n"
+                f"**{member.display_name}**님에게 **{points}P**를 추가했습니다.\n"
                 f"현재 포인트: **{result}P**"
             ),
             ephemeral=True,
         )
 
     @app_commands.command(name="포인트_감소", description="포인트를 차감합니다.")
-    @app_commands.describe(member="유저를 선택해주세요.", points="차감할 포인트 양")
+    @app_commands.describe(member="대상 유저", points="차감할 포인트")
     @app_commands.default_permissions(administrator=True)
     async def remove_point_cmd(self, interaction: discord.Interaction, member: discord.Member, points: int):
         await interaction.response.defer(ephemeral=True)
@@ -89,7 +89,7 @@ class PointSystem(commands.Cog):
             log.info("[포인트 차감] user=%s amount=%s 잔여=%sP by=%s", member.id, points, result, interaction.user.id)
             await interaction.followup.send(
                 view=success_view(
-                    f"**{member.display_name}**님의 포인트에서 **{points}P**가 차감되었습니다.\n"
+                    f"**{member.display_name}**님의 포인트에서 **{points}P**를 차감했습니다.\n"
                     f"현재 포인트: **{result}P**"
                 ),
                 ephemeral=True,
@@ -111,7 +111,7 @@ class PointSystem(commands.Cog):
                 )
 
     @app_commands.command(name="포인트_업데이트", description="포인트를 입력한 값으로 변경합니다.")
-    @app_commands.describe(member="유저를 선택해주세요.", points="변경 후 포인트")
+    @app_commands.describe(member="대상 유저", points="변경 후 포인트")
     @app_commands.default_permissions(administrator=True)
     async def update_point_cmd(self, interaction: discord.Interaction, member: discord.Member, points: int):
         await interaction.response.defer(ephemeral=True)
@@ -141,7 +141,7 @@ class PointSystem(commands.Cog):
             log.info("[포인트 변경] user=%s prev=%sP new=%sP by=%s", member.id, prev, points, interaction.user.id)
             await interaction.followup.send(
                 view=success_view(
-                    f"**{member.display_name}**님의 포인트가 변경되었습니다.\n"
+                    f"**{member.display_name}**님의 포인트를 변경했습니다.\n"
                     f"이전 **{prev}P**, 현재 **{points}P**"
                 ),
                 ephemeral=True,

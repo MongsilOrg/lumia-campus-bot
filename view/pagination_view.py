@@ -53,7 +53,7 @@ class PaginationView(ExpiringLayoutView):
 
         container = discord.ui.Container(accent_colour=discord.Colour.blurple())
         container.add_item(discord.ui.TextDisplay(
-            f"## 📋 {escape_markdown(owner_name)}님의 구매 이력\n"
+            f"## 📋 {escape_markdown(owner_name)}님의 구매 내역\n"
             f"{lines}\n"
             f"-# 페이지 {current_page} / {total_pages}"
         ))
